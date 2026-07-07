@@ -1,0 +1,124 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border-color);
+  --color-muted: var(--muted);
+
+  /* Brand colors */
+  --color-walnut: #5C3A21;
+  --color-walnut-light: #7A5035;
+  --color-aluminum: #8C929B;
+  --color-aluminum-light: #A8ADB5;
+  --color-brand-gold: #B8860B;
+  --color-brand-gold-light: #D4A017;
+  --color-silver-highlight: #D8DBDF;
+
+  /* Status colors */
+  --color-status-new: #64748B;
+  --color-status-progress: #D97706;
+  --color-status-completed: #16A34A;
+  --color-status-delivered: #0D9488;
+  --color-status-paid: #5C3A21;
+  --color-status-overdue: #DC2626;
+
+  /* Division colors */
+  --color-wood-stripe: #5C3A21;
+  --color-aluminum-stripe: #8C929B;
+  --color-design-stripe: #B8860B;
+
+  /* Fonts */
+  --font-sans: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+}
+
+:root {
+  --background: #FAFAF8;
+  --foreground: #2A2A2E;
+  --surface: #FFFFFF;
+  --surface-hover: #F5F5F3;
+  --border-color: #E5E5E3;
+  --muted: #71717A;
+}
+
+.dark {
+  --background: #1B1B1E;
+  --foreground: #E4E4E7;
+  --surface: #27272A;
+  --surface-hover: #323236;
+  --border-color: #3F3F46;
+  --muted: #A1A1AA;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #D8DBDF transparent;
+}
+
+.dark * {
+  scrollbar-color: #3F3F46 transparent;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+/* Smooth transitions for theme switching */
+* {
+  transition-property: background-color, border-color;
+  transition-timing-function: ease;
+  transition-duration: 150ms;
+}
+
+/* Override transition for specific elements that need instant response */
+.no-transition {
+  transition: none !important;
+}
+
+/* Kanban drag styles */
+.kanban-card-dragging {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  transform: rotate(2deg);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D8DBDF;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3F3F46;
+}
+
+/* Print styles for invoice */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+  
+  .print-area {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+}
