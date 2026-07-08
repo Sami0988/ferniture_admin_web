@@ -2,20 +2,35 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useGetProjectByIdQuery, useGetStatusHistoryQuery, useGetProjectAssigneesQuery, useUpdateProjectStatusMutation, useUpdateProjectMutation, useRemoveAssigneeMutation } from '@/store/api/projectsApi';
+import { useGetProjectByIdQuery, useGetStatusHistoryQuery, useGetProjectAssigneesQuery, useGetProjectPaymentsQuery, useRecordPaymentMutation, useUpdateProjectStatusMutation, useUpdateProjectMutation, useRemoveAssigneeMutation } from '@/store/api/projectsApi';
 import { useGetEmployeesQuery } from '@/store/api/employeesApi';
-import { cn, formatDate } from '@/lib/utils';
+import { useCreateInvoiceFromProjectMutation } from '@/store/api/invoicesApi';
+import { cn, formatDate, formatCurrency } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import StatusPill from '@/components/ui/StatusPill';
 import DivisionBadge from '@/components/ui/DivisionBadge';
-import { ArrowLeft, Calendar, User, Clock, Phone, Mail, MapPin, UserPlus, Check, X } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Clock, Phone, Mail, MapPin, UserPlus, Check, X, Banknote } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { ProjectStatus } from '@/types/api';
+import { ProjectStatus, ProjectPaymentMethod } from '@/types/api';
 
-const statusFlow: ProjectStatus[] = ['new', 'in_progress', 'completed', 'delivered', 'paid'];
+const validTransitions: Record<ProjectStatus, ProjectStatus[]> = {
+  new: ['in_progress', 'cancelled'],
+  in_progress: ['completed', 'cancelled'],
+  completed: ['delivered', 'cancelled'],
+  delivered: ['paid', 'cancelled'],
+  paid: [],
+  cancelled: ['new'],
+};
+
+const paymentMethods: { value: ProjectPaymentMethod; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'telebirr', label: 'TeleBirr' },
+  { value: 'cbe_birr', label: 'CBE Birr' },
+];
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -25,26 +40,78 @@ export default function ProjectDetailPage() {
   const { data: projectData, isLoading } = useGetProjectByIdQuery(projectId);
   const { data: historyData } = useGetStatusHistoryQuery(projectId);
   const { data: assigneesData } = useGetProjectAssigneesQuery(projectId);
+  const { data: paymentData } = useGetProjectPaymentsQuery(projectId);
   const { data: employeesData } = useGetEmployeesQuery({});
   const [updateProjectStatus] = useUpdateProjectStatusMutation();
   const [updateProject] = useUpdateProjectMutation();
   const [removeAssignee] = useRemoveAssigneeMutation();
+  const [recordPayment, { isLoading: isRecordingPayment }] = useRecordPaymentMutation();
+  const [createInvoiceFromProject] = useCreateInvoiceFromProjectMutation();
 
   const project = projectData?.data;
   const statusHistory = Array.isArray(historyData?.data) ? historyData!.data : [];
   const assignees = Array.isArray(assigneesData?.data) ? assigneesData!.data : [];
   const employees = Array.isArray(employeesData?.data) ? employeesData!.data : [];
+  const paymentSummary = paymentData?.data;
 
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
 
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<ProjectPaymentMethod>('cash');
+  const [paymentNote, setPaymentNote] = useState('');
+
+  const nextStatuses = project ? validTransitions[project.status] : [];
+
   const handleStatusChange = async (newStatus: ProjectStatus) => {
     try {
       await updateProjectStatus({ id: projectId, data: { status: newStatus } }).unwrap();
       toast.success(`Status updated to ${newStatus.replace('_', ' ')}`);
+      if (newStatus === 'paid') {
+        try {
+          await createInvoiceFromProject(projectId).unwrap();
+          toast.success('Invoice created with 15% VAT', { duration: 4000 });
+        } catch (invoiceErr: any) {
+          const msg = invoiceErr?.data?.message || invoiceErr?.message || 'Failed to create invoice';
+          toast.error(msg);
+        }
+      }
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to update status';
+      toast.error(message);
+    }
+  };
+
+  const handleRecordPayment = async () => {
+    const amount = parseFloat(paymentAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    try {
+      const result = await recordPayment({
+        projectId,
+        data: { amount, method: paymentMethod, note: paymentNote || undefined },
+      }).unwrap();
+      toast.success(`Payment of ${formatCurrency(amount)} recorded`);
+      if (result.data.summary.statusChanged) {
+        toast.success(`Project marked as ${result.data.summary.newStatus.replace('_', ' ')}`);
+        try {
+          await createInvoiceFromProject(projectId).unwrap();
+          toast.success('Invoice created with 15% VAT', { duration: 4000 });
+        } catch (invoiceErr: any) {
+          const msg = invoiceErr?.data?.message || invoiceErr?.message || 'Failed to create invoice';
+          toast.error(msg);
+        }
+      }
+      setPaymentModalOpen(false);
+      setPaymentAmount('');
+      setPaymentMethod('cash');
+      setPaymentNote('');
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Failed to record payment';
       toast.error(message);
     }
   };
@@ -128,18 +195,18 @@ export default function ProjectDetailPage() {
         <div className="p-4">
           <p className="text-xs font-medium text-muted uppercase tracking-wide mb-3">Update Status</p>
           <div className="flex gap-2 flex-wrap">
-            {statusFlow.map((status) => (
+            {nextStatuses.filter((s) => s !== 'cancelled').map((status) => (
               <Button
                 key={status}
-                variant={project.status === status ? 'primary' : 'outline'}
+                variant="primary"
                 size="sm"
                 onClick={() => handleStatusChange(status)}
-                disabled={project.status === status}
+                title={status === 'paid' ? 'This will auto-create an invoice with 15% VAT' : undefined}
               >
-                {status.replace('_', ' ')}
+                {status === 'completed' ? 'Mark Completed' : status === 'paid' ? 'Mark Paid' : status.replace('_', ' ')}
               </Button>
             ))}
-            {project.status !== 'cancelled' && (
+            {nextStatuses.includes('cancelled') && (
               <Button
                 variant="outline"
                 size="sm"
@@ -149,7 +216,16 @@ export default function ProjectDetailPage() {
                 Cancel
               </Button>
             )}
+            {nextStatuses.length === 0 && project.status !== 'paid' && (
+              <p className="text-sm text-muted">No status changes available</p>
+            )}
+            {project.status === 'paid' && (
+              <p className="text-sm text-green-600 font-medium">Project completed</p>
+            )}
           </div>
+          {nextStatuses.includes('paid') && (
+            <p className="text-[11px] text-muted mt-2">Marking as paid will auto-create an invoice with 15% VAT</p>
+          )}
         </div>
       </Card>
 
@@ -212,6 +288,95 @@ export default function ProjectDetailPage() {
                   </div>
                 )}
               </div>
+            </div>
+          </Card>
+
+          {/* Payment Summary */}
+          <Card>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-medium text-muted uppercase tracking-wide">Payments</p>
+                {project.status !== 'paid' && project.totalPrice != null && project.totalPrice > 0 && (
+                  <Button size="sm" onClick={() => setPaymentModalOpen(true)}>
+                    <Banknote className="h-3.5 w-3.5" />
+                    Record Payment
+                  </Button>
+                )}
+              </div>
+
+              {project.totalPrice != null && project.totalPrice > 0 ? (
+                <div className="space-y-4">
+                  {/* Summary bars */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-lg bg-surface-hover p-3">
+                      <p className="text-[10px] text-muted uppercase">Total Price</p>
+                      <p className="text-lg font-bold text-foreground">{formatCurrency(project.totalPrice)}</p>
+                    </div>
+                    <div className="rounded-lg bg-surface-hover p-3">
+                      <p className="text-[10px] text-muted uppercase">Total Paid</p>
+                      <p className="text-lg font-bold text-green-600">
+                        {paymentSummary ? formatCurrency(paymentSummary.totalPaid) : formatCurrency(project.paidNowPrice || 0)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-surface-hover p-3">
+                      <p className="text-[10px] text-muted uppercase">Remaining</p>
+                      <p className={cn('text-lg font-bold', (paymentSummary?.remaining ?? project.remainingPrice ?? 0) > 0 ? 'text-red-600' : 'text-green-600')}>
+                        {paymentSummary ? formatCurrency(paymentSummary.remaining) : formatCurrency(project.remainingPrice || 0)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div>
+                    <div className="flex justify-between text-[10px] text-muted mb-1">
+                      <span>Payment Progress</span>
+                      <span>
+                        {paymentSummary
+                          ? `${Math.min(100, Math.round((paymentSummary.totalPaid / project.totalPrice) * 100))}%`
+                          : `${Math.min(100, Math.round(((project.paidNowPrice || 0) / project.totalPrice) * 100))}%`
+                        }
+                      </span>
+                    </div>
+                    <div className="h-2 rounded-full bg-surface-hover overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-green-500 transition-all"
+                        style={{
+                          width: `${paymentSummary
+                            ? Math.min(100, (paymentSummary.totalPaid / project.totalPrice) * 100)
+                            : Math.min(100, ((project.paidNowPrice || 0) / project.totalPrice) * 100)
+                          }%`
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment history */}
+                  {paymentSummary && paymentSummary.payments.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium text-muted mb-2">Payment History</p>
+                      <div className="space-y-2">
+                        {paymentSummary.payments.map((p) => (
+                          <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-surface-hover">
+                            <div className="flex items-center gap-2">
+                              <Banknote className="h-3.5 w-3.5 text-muted" />
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{formatCurrency(p.amount)}</p>
+                                <p className="text-[10px] text-muted capitalize">{p.method.replace('_', ' ')}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {p.note && <p className="text-[10px] text-muted">{p.note}</p>}
+                              <p className="text-[10px] text-muted">{formatDate(p.createdAt)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted">No pricing set for this project</p>
+              )}
             </div>
           </Card>
         </div>
@@ -375,6 +540,76 @@ export default function ProjectDetailPage() {
             <Button onClick={handleAssign} loading={isAssigning}>
               Save Assignments ({selectedEmployeeIds.length})
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Record Payment Modal */}
+      <Modal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        title="Record Payment"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-surface-hover p-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Total Price</span>
+              <span className="font-medium text-foreground">{formatCurrency(project.totalPrice || 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Already Paid</span>
+              <span className="font-medium text-green-600">
+                {formatCurrency(paymentSummary?.totalPaid ?? project.paidNowPrice ?? 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm border-t border-border mt-2 pt-2">
+              <span className="text-muted">Remaining</span>
+              <span className="font-medium text-red-600">
+                {formatCurrency(paymentSummary?.remaining ?? project.remainingPrice ?? 0)}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Amount (ETB) *</label>
+            <input
+              type="number"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={paymentAmount}
+              onChange={(e) => setPaymentAmount(e.target.value)}
+              placeholder="0"
+              min="0"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Payment Method *</label>
+            <select
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value as ProjectPaymentMethod)}
+            >
+              {paymentMethods.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Note (optional)</label>
+            <input
+              type="text"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={paymentNote}
+              onChange={(e) => setPaymentNote(e.target.value)}
+              placeholder="e.g. First installment"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleRecordPayment} loading={isRecordingPayment}>Record Payment</Button>
           </div>
         </div>
       </Modal>

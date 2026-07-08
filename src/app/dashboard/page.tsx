@@ -45,8 +45,8 @@ export default function DashboardPage() {
   const monthlyRevenue = reportData?.data?.monthlyRevenue ?? mockMonthlyRevenue;
 
   // Compute stats
-  const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
-  const collectedRevenue = invoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
+  const totalRevenue = invoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount || '0'), 0);
+  const collectedRevenue = invoices.reduce((sum, inv) => sum + parseFloat(inv.totalPaid || '0'), 0);
   const outstandingRevenue = totalRevenue - collectedRevenue;
   const woodOrders = projects.filter((p) => p.division === 'furniture').length;
   const aluminumOrders = projects.filter((p) => p.division === 'aluminum').length;

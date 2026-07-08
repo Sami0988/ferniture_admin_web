@@ -1,7 +1,7 @@
 import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,

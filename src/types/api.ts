@@ -199,6 +199,8 @@ export interface CustomerSearchParams {
 export type ProjectStatus = 'new' | 'in_progress' | 'completed' | 'delivered' | 'paid' | 'cancelled';
 export type ProjectPriority = 'normal' | 'urgent' | 'vip';
 export type ProjectDivision = 'furniture' | 'aluminum' | 'interior_design' | 'custom_orders' | 'accessories';
+export type ProjectPaymentMethod = 'cash' | 'bank_transfer' | 'telebirr' | 'cbe_birr';
+export type AttachmentType = 'photo' | 'drawing' | 'document' | 'progress_photo' | 'completion_photo';
 
 export interface ApiProject {
   id: string;
@@ -218,6 +220,9 @@ export interface ApiProject {
   leadEmployeeId?: string;
   leadEmployeeName?: string;
   assignees?: ProjectAssignee[];
+  totalPrice?: number | null;
+  paidNowPrice?: number;
+  remainingPrice?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -226,16 +231,57 @@ export interface ProjectAssignee {
   id: string;
   fullName: string;
   phone: string;
+  specialty?: string;
 }
 
 export interface ProjectStatusHistory {
   id: string;
+  projectId: string;
   oldStatus: ProjectStatus;
   newStatus: ProjectStatus;
   changedBy: string;
-  changedByName: string;
+  changedByName?: string;
   notes?: string;
   changedAt: string;
+}
+
+export interface ProjectPayment {
+  id: string;
+  projectId: string;
+  amount: number;
+  method: ProjectPaymentMethod;
+  note?: string;
+  recordedBy: string;
+  createdAt: string;
+}
+
+export interface ProjectPaymentSummary {
+  totalPrice: number;
+  paidNowPrice: number;
+  totalPaid: number;
+  remaining: number;
+  overpaid: number;
+  payments: ProjectPayment[];
+}
+
+export interface RecordProjectPaymentRequest {
+  amount: number;
+  method: ProjectPaymentMethod;
+  note?: string;
+}
+
+export interface RecordPaymentResponse {
+  payment: ProjectPayment;
+  summary: {
+    totalPrice: number;
+    previousPaid: number;
+    paymentAmount: number;
+    newTotalPaid: number;
+    remaining: number;
+    overpaid: number;
+    statusChanged: boolean;
+    newStatus: ProjectStatus;
+  };
 }
 
 export interface CreateProjectRequest {
@@ -248,6 +294,8 @@ export interface CreateProjectRequest {
   leadEmployeeId?: string;
   priority?: ProjectPriority;
   assigneeIds?: string[];
+  totalPrice?: number;
+  paidNowPrice?: number;
 }
 
 export interface UpdateProjectRequest {
@@ -258,6 +306,8 @@ export interface UpdateProjectRequest {
   deliveryDate?: string;
   leadEmployeeId?: string;
   assigneeIds?: string[];
+  totalPrice?: number;
+  paidNowPrice?: number;
 }
 
 export interface UpdateProjectStatusRequest {
@@ -344,93 +394,99 @@ export interface ApproveMaterialRequest {
 }
 
 // ── Invoices ────────────────────────────────────────────────
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+export type InvoicePaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 export interface ApiInvoiceItem {
   id: string;
   description: string;
-  category: 'labor' | 'material' | 'delivery' | 'other';
-  quantity: number;
-  unitPrice: number;
-  total: number;
+  quantity: string;
+  unitPrice: string;
+  total: string;
+}
+
+export interface InvoicePayment {
+  id: string;
+  invoiceId: string;
+  amount: string;
+  method: ProjectPaymentMethod;
+  referenceNumber?: string;
+  paidAt: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  createdAt: string;
 }
 
 export interface ApiInvoice {
   id: string;
-  projectId: string;
-  project: ApiProject;
-  customerId: string;
-  customer: ApiCustomer;
   invoiceNumber: string;
+  projectId: string;
+  customerId: string;
+  subtotal: string;
+  discountAmount: string;
+  vatRate: string;
+  vatAmount: string;
+  totalAmount: string;
+  paymentStatus: InvoicePaymentStatus;
+  pdfUrl?: string;
+  customerName: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  projectTitle: string;
+  projectNumber: string;
   items: ApiInvoiceItem[];
-  subtotal: number;
-  vatRate: number;
-  vatAmount: number;
-  total: number;
-  amountPaid: number;
-  balanceDue: number;
-  status: InvoiceStatus;
-  dueDate: string;
-  notes?: string;
+  payments: InvoicePayment[];
+  totalPaid: string;
+  balanceDue: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface CreateInvoiceRequest {
   projectId: string;
-  items: Omit<ApiInvoiceItem, 'id' | 'total'>[];
+  customerId: string;
+  items: { description: string; quantity: number; unitPrice: number }[];
+  discountAmount?: number;
   vatRate?: number;
-  dueDate: string;
-  notes?: string;
+}
+
+export interface CreateInvoiceFromProjectRequest {
+  projectId: string;
 }
 
 export interface UpdateInvoiceRequest {
-  status?: InvoiceStatus;
-  dueDate?: string;
-  notes?: string;
+  discountAmount?: number;
+  vatRate?: number;
 }
 
 export interface UpdateInvoiceItemsRequest {
-  items: Omit<ApiInvoiceItem, 'id' | 'total'>[];
+  items: { description: string; quantity: number; unitPrice: number }[];
 }
 
 export interface InvoiceFilters {
-  paymentStatus?: InvoiceStatus;
+  paymentStatus?: InvoicePaymentStatus;
+  search?: string;
   page?: number;
   limit?: number;
 }
 
-// ── Payments ────────────────────────────────────────────────
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'mobile_money' | 'check' | 'card';
-
-export interface ApiPayment {
-  id: string;
-  invoiceId: string;
+export interface RecordInvoicePaymentRequest {
   amount: number;
-  method: PaymentMethod;
-  reference?: string;
-  notes?: string;
-  verified: boolean;
-  verifiedBy?: ApiUser;
-  verifiedAt?: string;
-  recordedBy: ApiUser;
-  recordedAt: string;
-  createdAt: string;
+  method: ProjectPaymentMethod;
+  referenceNumber?: string;
+  paidAt: string;
 }
 
-export interface RecordPaymentRequest {
-  invoiceId: string;
-  amount: number;
-  method: PaymentMethod;
-  reference?: string;
-  notes?: string;
-}
-
-export interface PaymentFilters {
-  method?: PaymentMethod;
-  invoiceId?: string;
-  page?: number;
-  limit?: number;
+export interface RecordInvoicePaymentResponse {
+  payment: InvoicePayment;
+  summary: {
+    totalAmount: number;
+    previousPaid: number;
+    paymentAmount: number;
+    newTotalPaid: number;
+    balanceDue: number;
+    paymentStatus: InvoicePaymentStatus;
+    projectSynced: boolean;
+    projectId: string;
+  };
 }
 
 // ── Uploads ─────────────────────────────────────────────────

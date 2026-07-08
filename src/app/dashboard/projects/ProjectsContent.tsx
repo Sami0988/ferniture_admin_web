@@ -90,6 +90,8 @@ export default function ProjectsContent() {
   const [formPriority, setFormPriority] = useState<ProjectPriority>('normal');
   const [formOrderDate, setFormOrderDate] = useState('');
   const [formDeliveryDate, setFormDeliveryDate] = useState('');
+  const [formTotalPrice, setFormTotalPrice] = useState('');
+  const [formPaidNowPrice, setFormPaidNowPrice] = useState('');
 
   // New customer form state
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
@@ -153,6 +155,8 @@ export default function ProjectsContent() {
         orderDate: formOrderDate,
         deliveryDate: formDeliveryDate || undefined,
         priority: formPriority,
+        totalPrice: formTotalPrice ? parseFloat(formTotalPrice) : undefined,
+        paidNowPrice: formPaidNowPrice ? parseFloat(formPaidNowPrice) : undefined,
       }).unwrap();
       toast.success('Project created successfully');
       setCreateModalOpen(false);
@@ -161,6 +165,8 @@ export default function ProjectsContent() {
       setFormCustomerId('');
       setFormOrderDate('');
       setFormDeliveryDate('');
+      setFormTotalPrice('');
+      setFormPaidNowPrice('');
       setCreateNewCustomer(false);
       setNewCustomerName('');
       setNewCustomerPhone('');
@@ -337,8 +343,8 @@ export default function ProjectsContent() {
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Division</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Priority</th>
-                  <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Order Date</th>
-                  <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Delivery Date</th>
+                  <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Total</th>
+                  <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Remaining</th>
                   <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -364,8 +370,12 @@ export default function ProjectsContent() {
                         {project.priority}
                       </span>
                     </td>
-                    <td className="py-3 text-sm text-muted">{formatDate(project.orderDate || '')}</td>
-                    <td className="py-3 text-sm text-muted">{formatDate(project.deliveryDate || '')}</td>
+                    <td className="py-3 text-right text-sm text-foreground font-medium">
+                      {project.totalPrice != null ? formatCurrency(project.totalPrice) : '—'}
+                    </td>
+                    <td className="py-3 text-right text-sm text-muted">
+                      {project.remainingPrice != null ? formatCurrency(project.remainingPrice) : '—'}
+                    </td>
                     <td className="py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -574,7 +584,7 @@ export default function ProjectsContent() {
                 ))}
               </select>
             </div>
-          <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Priority</label>
               <select
@@ -587,6 +597,40 @@ export default function ProjectsContent() {
                 <option value="vip">VIP</option>
               </select>
             </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Total Price (ETB)</label>
+              <input
+                type="number"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={formTotalPrice}
+                onChange={(e) => setFormTotalPrice(e.target.value)}
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Paid Now (ETB)</label>
+              <input
+                type="number"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={formPaidNowPrice}
+                onChange={(e) => setFormPaidNowPrice(e.target.value)}
+                placeholder="0"
+                min="0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Remaining (ETB)</label>
+              <input
+                type="number"
+                className="flex w-full rounded-lg border border-border bg-surface-hover px-3 py-2 text-sm text-foreground cursor-not-allowed"
+                value={formTotalPrice ? Math.max(0, parseFloat(formTotalPrice) - (formPaidNowPrice ? parseFloat(formPaidNowPrice) : 0)) : ''}
+                readOnly
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Order Date *</label>
               <input

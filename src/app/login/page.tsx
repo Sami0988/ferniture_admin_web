@@ -28,7 +28,7 @@ export default function LoginPage() {
       const result = await loginMutation({ phone: email, password }).unwrap();
       const { accessToken, refreshToken } = result.data as unknown as { accessToken: string; refreshToken: string };
 
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
+      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
       const userRes = await fetch(`${BASE_URL}/users/me`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });

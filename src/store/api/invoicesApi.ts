@@ -3,10 +3,12 @@ import { transformPaginatedResponse } from '@/lib/api-transforms';
 import type {
   ApiInvoice,
   CreateInvoiceRequest,
+  CreateInvoiceFromProjectRequest,
   UpdateInvoiceRequest,
   UpdateInvoiceItemsRequest,
   InvoiceFilters,
-  ApiPayment,
+  RecordInvoicePaymentRequest,
+  RecordInvoicePaymentResponse,
   ApiResponse,
   PaginatedResponse,
 } from '@/types/api';
@@ -36,6 +38,14 @@ export const invoicesApi = baseApi.injectEndpoints({
       invalidatesTags: ['Invoice', 'Project'],
     }),
 
+    createInvoiceFromProject: builder.mutation<ApiResponse<ApiInvoice>, string>({
+      query: (projectId) => ({
+        url: `/invoices/from-project/${projectId}`,
+        method: 'POST',
+      }),
+      invalidatesTags: ['Invoice', 'Project'],
+    }),
+
     updateInvoice: builder.mutation<ApiResponse<ApiInvoice>, { id: string; data: UpdateInvoiceRequest }>({
       query: ({ id, data }) => ({
         url: `/invoices/${id}`,
@@ -54,32 +64,24 @@ export const invoicesApi = baseApi.injectEndpoints({
       invalidatesTags: (_result, _error, { id }) => [{ type: 'Invoice', id }, 'Invoice'],
     }),
 
-    getInvoicePayments: builder.query<ApiResponse<ApiPayment[]>, string>({
-      query: (id) => `/invoices/${id}/payments`,
-      providesTags: ['Payment'],
-    }),
-
-    recordPayment: builder.mutation<ApiResponse<ApiPayment>, { id: string; data: { amount: number; method: string; reference?: string; notes?: string } }>({
+    recordInvoicePayment: builder.mutation<ApiResponse<RecordInvoicePaymentResponse>, { id: string; data: RecordInvoicePaymentRequest }>({
       query: ({ id, data }) => ({
         url: `/invoices/${id}/payments`,
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Payment', 'Invoice'],
+      invalidatesTags: (_result, _error, { id }) => [{ type: 'Invoice', id }, 'Invoice', 'Project'],
     }),
 
-    emailInvoice: builder.mutation<void, string>({
+    emailInvoice: builder.mutation<{ success: boolean; message: string }, string>({
       query: (id) => ({
         url: `/invoices/${id}/email`,
         method: 'POST',
       }),
     }),
 
-    getInvoicePdf: builder.query<Blob, string>({
-      query: (id) => ({
-        url: `/invoices/${id}/pdf`,
-        responseHandler: (res: Response) => res.blob(),
-      }),
+    getInvoicePdf: builder.query<ApiResponse<{ pdfUrl: string }>, string>({
+      query: (id) => `/invoices/${id}/pdf`,
     }),
 
     deleteInvoice: builder.mutation<void, string>({
@@ -96,10 +98,10 @@ export const {
   useGetInvoicesQuery,
   useGetInvoiceByIdQuery,
   useCreateInvoiceMutation,
+  useCreateInvoiceFromProjectMutation,
   useUpdateInvoiceMutation,
   useUpdateInvoiceItemsMutation,
-  useGetInvoicePaymentsQuery,
-  useRecordPaymentMutation,
+  useRecordInvoicePaymentMutation,
   useEmailInvoiceMutation,
   useLazyGetInvoicePdfQuery,
   useDeleteInvoiceMutation,

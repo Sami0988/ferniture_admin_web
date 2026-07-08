@@ -8,6 +8,9 @@ import type {
   ProjectFilters,
   ProjectStatusHistory,
   ProjectAssignee,
+  ProjectPaymentSummary,
+  RecordProjectPaymentRequest,
+  RecordPaymentResponse,
   ApiResponse,
   PaginatedResponse,
 } from '@/types/api';
@@ -81,6 +84,20 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
     }),
+
+    getProjectPayments: builder.query<ApiResponse<ProjectPaymentSummary>, string>({
+      query: (id) => `/projects/${id}/payments`,
+      providesTags: (_result, _error, id) => [{ type: 'Project', id }],
+    }),
+
+    recordPayment: builder.mutation<ApiResponse<RecordPaymentResponse>, { projectId: string; data: RecordProjectPaymentRequest }>({
+      query: ({ projectId, data }) => ({
+        url: `/projects/${projectId}/pay`,
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }, 'Project'],
+    }),
   }),
 });
 
@@ -94,4 +111,6 @@ export const {
   useGetProjectAssigneesQuery,
   useDeleteProjectMutation,
   useRemoveAssigneeMutation,
+  useGetProjectPaymentsQuery,
+  useRecordPaymentMutation,
 } = projectsApi;
