@@ -34,19 +34,22 @@ function LoginForm() {
       });
       const userData = await userRes.json();
 
+      const user = userData.data;
       setCredentials({
         user: {
-          id: userData.data.id,
-          name: userData.data.name,
-          email: userData.data.email,
-          phone: userData.data.phone,
-          role: userData.data.role,
-          avatar: userData.data.avatar,
+          id: user.id,
+          name: user.fullName || user.name || email,
+          email: user.email || '',
+          phone: user.phone || '',
+          role: user.role || 'user',
+          avatar: user.avatarUrl || user.avatar || null,
         },
         tokens: { accessToken, refreshToken },
       });
-      router.push(redirectTo);
+
+      await router.push(redirectTo);
     } catch (err: unknown) {
+      console.error('Login error:', err);
       const error = err as { data?: { message?: string } };
       setError(error?.data?.message || 'Invalid phone or password');
     }
