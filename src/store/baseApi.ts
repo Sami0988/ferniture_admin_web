@@ -71,6 +71,8 @@ export const baseApi = createApi({
     'CompanySetting',
     'AuditLog',
     'DashboardReport',
+    'PaymentLetter',
+    'LetterTemplate',
   ],
   endpoints: () => ({}),
 });

@@ -1,14 +1,13 @@
 'use client';
 
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, formatDate } from '@/lib/utils';
 import KpiCard from '@/components/ui/KpiCard';
 import Card from '@/components/ui/Card';
 import StatusPill from '@/components/ui/StatusPill';
 import DivisionBadge from '@/components/ui/DivisionBadge';
 import Avatar from '@/components/ui/Avatar';
-import RevenueBarChart from '@/components/charts/RevenueBarChart';
+import DivisionBarChart from '@/components/charts/DivisionBarChart';
 import OrdersDonutChart from '@/components/charts/OrdersDonutChart';
-import { mockMonthlyRevenue } from '@/lib/mock-data';
 import {
   DollarSign,
   ShoppingCart,
@@ -16,60 +15,51 @@ import {
   AlertTriangle,
   TrendingUp,
   Clock,
+  Building2,
+  Banknote,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useGetProjectsQuery } from '@/store/api/projectsApi';
-import { useGetCustomersQuery } from '@/store/api/customersApi';
-import { useGetEmployeesQuery } from '@/store/api/employeesApi';
-import { useGetInvoicesQuery } from '@/store/api/invoicesApi';
 import { useGetDashboardReportQuery } from '@/store/api/reportsApi';
 
 export default function DashboardPage() {
-  const { data: projectsData } = useGetProjectsQuery({});
-  const { data: customersData } = useGetCustomersQuery({});
-  const { data: employeesData } = useGetEmployeesQuery({});
-  const { data: invoicesData } = useGetInvoicesQuery({});
-  const { data: reportData } = useGetDashboardReportQuery();
+  const { data: reportData, isLoading } = useGetDashboardReportQuery();
+  const dashboard = reportData?.data;
 
-  const projects = Array.isArray(projectsData?.data) ? projectsData.data : [];
-  const customers = (Array.isArray(customersData?.data) ? customersData.data : []).map((c) => ({
-    ...c,
-    name: c.fullName || '',
-    totalOrders: c.stats?.totalOrders ?? 0,
-    totalSpent: c.stats?.totalAmount ?? 0,
-    email: c.email || '',
+  // KPI data from API
+  const totalProjects = dashboard?.totals?.projects || 0;
+  const activeProjects = dashboard?.totals?.activeProjects || 0;
+  const completedProjects = dashboard?.totals?.completedProjects || 0;
+  const totalCustomers = dashboard?.totals?.customers || 0;
+  const totalEmployees = dashboard?.totals?.employees || 0;
+  
+  const revenueThisMonth = dashboard?.revenue?.thisMonth || 0;
+  const revenueThisYear = dashboard?.revenue?.thisYear || 0;
+  const outstandingRevenue = dashboard?.revenue?.outstanding || 0;
+
+  // Status donut data from API
+  const statusData = (dashboard?.projectsByStatus || []).map((item: any) => ({
+    name: item.status.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+    value: item.count,
+    color: item.status === 'completed' ? '#16A34A' 
+         : item.status === 'in_progress' ? '#D97706' 
+         : item.status === 'new' ? '#64748B'
+         : item.status === 'paid' ? '#5C3A21'
+         : item.status === 'delivered' ? '#0D9488'
+         : '#64748B',
   }));
-  const employees = Array.isArray(employeesData?.data) ? employeesData.data : [];
-  const invoices = Array.isArray(invoicesData?.data) ? invoicesData.data : [];
-  const monthlyRevenue = reportData?.data?.monthlyRevenue ?? mockMonthlyRevenue;
 
-  // Compute stats
-  const totalRevenue = invoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount || '0'), 0);
-  const collectedRevenue = invoices.reduce((sum, inv) => sum + parseFloat(inv.totalPaid || '0'), 0);
-  const outstandingRevenue = totalRevenue - collectedRevenue;
-  const woodOrders = projects.filter((p) => p.division === 'furniture').length;
-  const aluminumOrders = projects.filter((p) => p.division === 'aluminum').length;
-  const designOrders = projects.filter((p) => p.division === 'interior_design').length;
-  const overdueProjects = projects.filter(
-    (p) => {
-      const dueDate = p.deliveryDate;
-      return dueDate && new Date(dueDate) < new Date() && p.status !== 'paid' && p.status !== 'delivered';
-    }
-  );
-  const recentProjects = [...projects].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  // Division data from API
+  const divisionData = dashboard?.projectsByDivision || [];
+  const furnitureCount = divisionData.find((d: any) => d.division === 'furniture')?.count || 0;
+  const aluminumCount = divisionData.find((d: any) => d.division === 'aluminum')?.count || 0;
+  const interiorCount = divisionData.find((d: any) => d.division === 'interior_design')?.count || 0;
 
-  // Status donut data
-  const statusData = [
-    { name: 'New', value: projects.filter((p) => p.status === 'new').length, color: '#64748B' },
-    { name: 'In Progress', value: projects.filter((p) => p.status === 'in_progress').length, color: '#D97706' },
-    { name: 'Completed', value: projects.filter((p) => p.status === 'completed').length, color: '#16A34A' },
-    { name: 'Delivered', value: projects.filter((p) => p.status === 'delivered').length, color: '#0D9488' },
-    { name: 'Paid', value: projects.filter((p) => p.status === 'paid').length, color: '#5C3A21' },
-  ];
+  // Recent projects from API
+  const recentProjects = dashboard?.recentProjects || [];
 
-  // Top customers
-  const topCustomers = [...customers].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 5);
+  // Recent payments from API
+  const recentPayments = dashboard?.recentPayments || [];
 
   const container = {
     hidden: { opacity: 0 },
@@ -79,6 +69,19 @@ export default function DashboardPage() {
     hidden: { opacity: 0, y: 10 },
     show: { opacity: 1, y: 0 },
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="h-8 w-48 bg-surface-hover rounded animate-pulse" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-32 bg-surface-hover rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
@@ -91,18 +94,16 @@ export default function DashboardPage() {
       {/* KPI Row */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          title="Total Revenue"
-          value={formatCurrency(totalRevenue)}
+          title="Total Revenue (Year)"
+          value={formatCurrency(revenueThisYear)}
           icon={<DollarSign className="h-5 w-5" />}
-          change="+12% from last month"
-          changeType="positive"
           accent="gold"
         />
         <KpiCard
-          title="Collected"
-          value={formatCurrency(collectedRevenue)}
+          title="This Month"
+          value={formatCurrency(revenueThisMonth)}
           icon={<TrendingUp className="h-5 w-5" />}
-          change={`${((collectedRevenue / totalRevenue) * 100).toFixed(0)}% collection rate`}
+          change="Current month"
           changeType="positive"
         />
         <KpiCard
@@ -112,55 +113,54 @@ export default function DashboardPage() {
           accent="aluminum"
         />
         <KpiCard
-          title="Overdue Orders"
-          value={overdueProjects.length}
-          icon={<AlertTriangle className="h-5 w-5" />}
-          change={overdueProjects.length > 0 ? 'Needs attention' : 'All on track'}
-          changeType={overdueProjects.length > 0 ? 'negative' : 'positive'}
-          accent={overdueProjects.length > 0 ? 'default' : 'default'}
+          title="Total Projects"
+          value={totalProjects}
+          icon={<ShoppingCart className="h-5 w-5" />}
+          change={`${activeProjects} active, ${completedProjects} completed`}
+          changeType="positive"
         />
       </motion.div>
 
-      {/* Division Stats */}
+      {/* Stats Row */}
       <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/dashboard/projects?division=wood">
+        <Link href="/dashboard/projects">
           <Card hover className="border-l-4 border-l-walnut">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted uppercase tracking-wide">Wood Division</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{woodOrders}</p>
-                <p className="text-xs text-muted mt-0.5">Active orders</p>
+                <p className="text-xs font-medium text-muted uppercase tracking-wide">Projects</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{totalProjects}</p>
+                <p className="text-xs text-muted mt-0.5">{activeProjects} active orders</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-walnut/10 flex items-center justify-center">
-                <span className="text-walnut font-bold text-xs">W</span>
+                <ShoppingCart className="h-5 w-5 text-walnut" />
               </div>
             </div>
           </Card>
         </Link>
-        <Link href="/dashboard/projects?division=aluminum">
+        <Link href="/dashboard/customers">
           <Card hover className="border-l-4 border-l-aluminum">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted uppercase tracking-wide">Aluminum Division</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{aluminumOrders}</p>
-                <p className="text-xs text-muted mt-0.5">Active orders</p>
+                <p className="text-xs font-medium text-muted uppercase tracking-wide">Customers</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{totalCustomers}</p>
+                <p className="text-xs text-muted mt-0.5">Total customers</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-aluminum/10 flex items-center justify-center">
-                <span className="text-aluminum font-bold text-xs">A</span>
+                <Users className="h-5 w-5 text-aluminum" />
               </div>
             </div>
           </Card>
         </Link>
-        <Link href="/dashboard/projects?division=interior_design">
+        <Link href="/dashboard/employees">
           <Card hover className="border-l-4 border-l-brand-gold">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted uppercase tracking-wide">Interior Design</p>
-                <p className="text-2xl font-bold text-foreground mt-1">{designOrders}</p>
-                <p className="text-xs text-muted mt-0.5">Active orders</p>
+                <p className="text-xs font-medium text-muted uppercase tracking-wide">Employees</p>
+                <p className="text-2xl font-bold text-foreground mt-1">{totalEmployees}</p>
+                <p className="text-xs text-muted mt-0.5">Team members</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-brand-gold/10 flex items-center justify-center">
-                <span className="text-brand-gold font-bold text-xs">D</span>
+                <Building2 className="h-5 w-5 text-brand-gold" />
               </div>
             </div>
           </Card>
@@ -171,13 +171,17 @@ export default function DashboardPage() {
       <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Monthly Revenue by Division</h3>
+            <h3 className="text-sm font-semibold text-foreground">Projects by Division</h3>
           </div>
-          <RevenueBarChart data={monthlyRevenue} />
+          <DivisionBarChart data={[
+            { name: 'Furniture', value: furnitureCount, color: '#5C3A21' },
+            { name: 'Aluminum', value: aluminumCount, color: '#8C929B' },
+            { name: 'Interior Design', value: interiorCount, color: '#B8860B' },
+          ]} />
         </Card>
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Orders by Status</h3>
+            <h3 className="text-sm font-semibold text-foreground">Projects by Status</h3>
           </div>
           <OrdersDonutChart data={statusData} />
         </Card>
@@ -185,49 +189,52 @@ export default function DashboardPage() {
 
       {/* Bottom Row */}
       <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recent Orders */}
+        {/* Recent Projects */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Recent Work Orders</h3>
+            <h3 className="text-sm font-semibold text-foreground">Recent Projects</h3>
             <Link href="/dashboard/projects" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">
               View all
             </Link>
           </div>
           <div className="space-y-3">
-            {recentProjects.map((project) => (
-              <div key={project.id} className="flex items-center gap-3 rounded-lg border border-border/50 p-3 hover:bg-surface-hover transition-colors">
-                <div className={`h-1 w-8 rounded-full shrink-0 ${
-                  project.division === 'furniture' ? 'bg-walnut' :
-                  project.division === 'aluminum' ? 'bg-aluminum' : 'bg-brand-gold'
-                }`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{project.title}</p>
-                  <p className="text-xs text-muted">{project.customerName || project.customer?.fullName} &middot; {project.projectNumber}</p>
+            {recentProjects.map((project: any) => (
+              <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
+                <div className="flex items-center gap-3 rounded-lg border border-border/50 p-3 hover:bg-surface-hover transition-colors cursor-pointer">
+                  <div className={`h-1 w-8 rounded-full shrink-0 ${
+                    project.division === 'furniture' ? 'bg-walnut' :
+                    project.division === 'aluminum' ? 'bg-aluminum' : 'bg-brand-gold'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{project.title}</p>
+                    <p className="text-xs text-muted">{project.customerName} &middot; {project.projectNumber}</p>
+                  </div>
+                  <StatusPill status={project.status} size="sm" />
                 </div>
-                <StatusPill status={project.status} size="sm" />
-              </div>
+              </Link>
             ))}
           </div>
         </Card>
 
-        {/* Top Customers */}
+        {/* Recent Payments */}
         <Card>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-foreground">Top Customers</h3>
-            <Link href="/dashboard/customers" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">
+            <h3 className="text-sm font-semibold text-foreground">Recent Payments</h3>
+            <Link href="/dashboard/invoices" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">
               View all
             </Link>
           </div>
           <div className="space-y-3">
-            {topCustomers.map((customer, i) => (
-              <div key={customer.id} className="flex items-center gap-3 p-2">
-                <span className="text-xs font-bold text-muted w-4">{i + 1}</span>
-                <Avatar name={customer.name} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{customer.name}</p>
-                  <p className="text-xs text-muted">{customer.totalOrders} orders</p>
+            {recentPayments.map((payment: any) => (
+              <div key={payment.id} className="flex items-center gap-3 p-2">
+                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+                  <Banknote className="h-4 w-4 text-green-600" />
                 </div>
-                <span className="text-sm font-semibold text-foreground">{formatCurrency(customer.totalSpent)}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">{payment.customerName}</p>
+                  <p className="text-xs text-muted">{payment.invoiceNumber} &middot; {formatDate(payment.paidAt)}</p>
+                </div>
+                <span className="text-sm font-semibold text-green-600">{formatCurrency(payment.amount)}</span>
               </div>
             ))}
           </div>

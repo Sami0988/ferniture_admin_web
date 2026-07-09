@@ -6,7 +6,8 @@ interface AuthState {
   isAuthenticated: boolean;
   user: {
     id: string;
-    name: string;
+    name?: string;
+    fullName?: string;
     email: string;
     phone: string;
     role: 'super_admin' | 'manager' | 'viewer';
@@ -35,7 +36,7 @@ const initialState: AuthState = {
   accessToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null,
   refreshToken: typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null,
   isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('accessToken') : false,
-  user: null,
+  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null,
 };
 
 const authSlice = createSlice({
@@ -50,6 +51,7 @@ const authSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.setItem('accessToken', action.payload.tokens.accessToken);
         localStorage.setItem('refreshToken', action.payload.tokens.refreshToken);
+        localStorage.setItem('user', JSON.stringify(action.payload.user));
         setCookie('accessToken', action.payload.tokens.accessToken);
         setCookie('refreshToken', action.payload.tokens.refreshToken);
       }
@@ -75,6 +77,7 @@ const authSlice = createSlice({
       if (typeof window !== 'undefined') {
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
         removeCookie('accessToken');
         removeCookie('refreshToken');
       }

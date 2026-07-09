@@ -160,9 +160,6 @@ function LoginForm() {
             </Button>
           </form>
 
-          <p className="text-xs text-center text-muted">
-            Demo: use <strong>admin@kassahun.com</strong> or <strong>phone number</strong> / <strong>admin123</strong>
-          </p>
         </div>
       </div>
     </div>

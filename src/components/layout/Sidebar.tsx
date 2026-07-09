@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useUI } from '@/hooks/useStore';
+import { useGetCompanyInfoQuery } from '@/store/api/companySettingsApi';
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +15,8 @@ import {
   Settings,
   Palette,
   Package,
+  Mail,
+  FileCode,
 } from 'lucide-react';
 
 const navItems = [
@@ -23,6 +26,8 @@ const navItems = [
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/materials', label: 'Materials', icon: Palette },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
+  { href: '/dashboard/payment-letters', label: 'Payment Letters', icon: Mail },
+  { href: '/dashboard/letter-templates', label: 'Letter Templates', icon: FileCode },
   { href: '/dashboard/employees', label: 'Employees', icon: Hammer },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
 ];
@@ -30,6 +35,13 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed } = useUI();
+  const { data: companyData } = useGetCompanyInfoQuery();
+  const company = companyData?.data;
+
+  const companyName = company?.company_name || 'Kassahun';
+  const tagline = company?.company_tagline || 'Wood & Aluminum';
+  const logo = company?.company_logo;
+  const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
 
   return (
     <aside
@@ -40,13 +52,21 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-walnut text-white font-bold text-xs">
-          KW
-        </div>
+        {logo ? (
+          <img
+            src={logo}
+            alt={companyName}
+            className="h-8 w-8 shrink-0 rounded-lg object-contain"
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-walnut text-white font-bold text-xs">
+            {initials}
+          </div>
+        )}
         {!sidebarCollapsed && (
           <div className="flex flex-col overflow-hidden">
-            <span className="text-sm font-semibold text-foreground truncate">Kassahun</span>
-            <span className="text-[10px] text-muted truncate">Wood & Aluminum</span>
+            <span className="text-sm font-semibold text-foreground truncate">{companyName}</span>
+            <span className="text-[10px] text-muted truncate">{tagline}</span>
           </div>
         )}
       </div>

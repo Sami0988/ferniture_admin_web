@@ -311,7 +311,7 @@ export default function InvoiceDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted">Invoice not found</p>
-        <Button variant="outline" onClick={() => router.back()} className="mt-4">Go Back</Button>
+        <Button variant="outline" onClick={() => router.push('/dashboard/invoices')} className="mt-4">Go Back</Button>
       </div>
     );
   }
@@ -320,7 +320,7 @@ export default function InvoiceDetailPage() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6 no-print">
       {/* Header actions */}
       <div className="flex items-center justify-between">
-        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-muted hover:text-foreground transition-colors">
+        <button onClick={() => router.push('/dashboard/invoices')} className="flex items-center gap-2 text-sm text-muted hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to Invoices
         </button>
         <div className="flex gap-2">

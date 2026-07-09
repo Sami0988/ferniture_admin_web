@@ -55,10 +55,12 @@ export type UserRole = 'super_admin' | 'manager' | 'viewer';
 export interface ApiUser {
   id: string;
   name: string;
+  fullName: string;
   email: string;
   phone: string;
   role: UserRole;
   avatar?: string;
+  avatarUrl?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -520,21 +522,37 @@ export interface ApiNotification {
 
 // ── Reports ─────────────────────────────────────────────────
 export interface DashboardReport {
-  totalRevenue: number;
-  billedRevenue: number;
-  collectedRevenue: number;
-  outstandingRevenue: number;
-  ordersToday: number;
-  ordersThisWeek: number;
-  ordersThisMonth: number;
-  woodOrders: number;
-  aluminumOrders: number;
-  designOrders: number;
-  overdueOrders: number;
-  monthlyRevenue: MonthlyRevenue[];
-  ordersByStatus: { status: string; count: number }[];
-  topCustomers: { customer: ApiCustomer; totalSpent: number; orderCount: number }[];
-  employeePerformance: { employee: ApiEmployee; completedProjects: number; activeProjects: number }[];
+  totals: {
+    projects: number;
+    activeProjects: number;
+    completedProjects: number;
+    customers: number;
+    employees: number;
+  };
+  revenue: {
+    thisMonth: number;
+    thisYear: number;
+    outstanding: number;
+  };
+  projectsByStatus: { status: string; count: number }[];
+  projectsByDivision: { division: string; count: number }[];
+  recentProjects: {
+    id: string;
+    projectNumber: string;
+    title: string;
+    status: string;
+    division: string;
+    createdAt: string;
+    customerName: string;
+  }[];
+  recentPayments: {
+    id: string;
+    amount: string;
+    method: string;
+    paidAt: string;
+    invoiceNumber: string;
+    customerName: string;
+  }[];
 }
 
 export interface MonthlyRevenue {
@@ -704,22 +722,114 @@ export interface CompanySetting {
 }
 
 export interface CompanyInfo {
-  name: string;
-  tagline: string;
-  email: string;
-  phone: string;
-  address: string;
-  logo?: string;
-  socialLinks: {
-    instagram?: string;
-    twitter?: string;
-    facebook?: string;
-    linkedin?: string;
-  };
+  company_name: string;
+  company_tagline?: string;
+  company_email: string;
+  company_phone: string;
+  company_address: string;
+  company_logo?: string;
+  signatory_name?: string;
+  bank_name?: string;
+  bank_account_number?: string;
+  bank_account_name?: string;
+  vat_rate?: string;
+  company_tin?: string;
 }
 
 export interface BulkUpdateSettingsRequest {
-  settings: { key: string; value: string }[];
+  settings: Record<string, string>;
+}
+
+// ── Letter Templates ───────────────────────────────────────
+export interface ApiLetterTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  htmlContent: string;
+  cssContent?: string;
+  isDefault: boolean;
+  usageCount?: number;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateLetterTemplateRequest {
+  name: string;
+  description?: string;
+  htmlContent: string;
+  cssContent?: string;
+}
+
+export interface UpdateLetterTemplateRequest {
+  name?: string;
+  description?: string;
+  htmlContent?: string;
+  cssContent?: string;
+}
+
+// ── Payment Letters ─────────────────────────────────────────
+export type PaymentLetterStatus = 'draft' | 'sent' | 'paid';
+
+export interface ApiPaymentLetter {
+  id: string;
+  letterNumber: string;
+  projectId: string;
+  projectNumber?: string;
+  projectTitle?: string;
+  customerId?: string;
+  customerName?: string;
+  templateId?: string;
+  templateName?: string;
+  recipientCompanyName: string;
+  recipientName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject: string;
+  body: string;
+  referenceNumber?: string;
+  dueDate?: string;
+  pdfUrl?: string;
+  status: PaymentLetterStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentLetterRequest {
+  projectId: string;
+  customerId?: string;
+  templateId?: string;
+  recipientCompanyName: string;
+  recipientName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject: string;
+  body: string;
+  referenceNumber?: string;
+  dueDate?: string;
+}
+
+export interface UpdatePaymentLetterRequest {
+  projectId?: string;
+  customerId?: string;
+  templateId?: string;
+  recipientCompanyName?: string;
+  recipientName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject?: string;
+  body?: string;
+  referenceNumber?: string;
+  dueDate?: string;
+}
+
+export interface PaymentLetterFilters {
+  projectId?: string;
+  customerId?: string;
+  status?: PaymentLetterStatus;
+  page?: number;
+  limit?: number;
 }
 
 // ── Audit Logs ──────────────────────────────────────────────

@@ -115,10 +115,10 @@ export default function TopBar() {
             onClick={() => setShowProfile(!showProfile)}
             className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-surface-hover transition-colors"
           >
-            <Avatar name={user?.name || 'Admin'} size="sm" />
-            <div className="hidden sm:flex flex-col items-start">
-              <span className="text-sm font-medium text-foreground leading-tight">{user?.name}</span>
-              <span className="text-[10px] text-muted capitalize">{user?.role?.replace('_', ' ')}</span>
+            <Avatar name={user?.fullName || user?.name || 'Admin'} size="sm" />
+            <div className="hidden sm:flex flex-col items-start max-w-[120px]">
+              <span suppressHydrationWarning className="text-xs font-medium text-foreground leading-tight line-clamp-2">{user?.fullName || user?.name}</span>
+              <span suppressHydrationWarning className="text-[10px] text-muted capitalize">{user?.role?.replace('_', ' ')}</span>
             </div>
             <ChevronDown className="h-3.5 w-3.5 text-muted hidden sm:block" />
           </button>
@@ -127,8 +127,8 @@ export default function TopBar() {
           {showProfile && (
             <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-surface shadow-2xl z-50 py-1">
               <div className="px-3 py-2 border-b border-border">
-                <p className="text-sm font-medium text-foreground">{user?.name}</p>
-                <p className="text-xs text-muted">{user?.email}</p>
+                <p suppressHydrationWarning className="text-sm font-medium text-foreground">{user?.fullName || user?.name}</p>
+                <p suppressHydrationWarning className="text-xs text-muted">{user?.email}</p>
               </div>
               <button
                 onClick={handleLogout}

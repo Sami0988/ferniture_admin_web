@@ -28,6 +28,7 @@ export default function Avatar({ name, src, size = 'md', className }: AvatarProp
 
   return (
     <div
+      suppressHydrationWarning
       className={cn(
         'rounded-full bg-brand-gold/10 text-brand-gold font-semibold flex items-center justify-center ring-2 ring-surface',
         sizeClasses[size],

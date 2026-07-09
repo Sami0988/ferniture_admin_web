@@ -32,7 +32,7 @@ export default function CustomerDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted">Customer not found</p>
-        <Button variant="outline" onClick={() => router.back()} className="mt-4">Go Back</Button>
+        <Button variant="outline" onClick={() => router.push('/dashboard/customers')} className="mt-4">Go Back</Button>
       </div>
     );
   }
@@ -43,7 +43,7 @@ export default function CustomerDetailPage() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/customers')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex items-center gap-4">

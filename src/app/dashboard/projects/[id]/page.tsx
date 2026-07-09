@@ -1,17 +1,19 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetProjectByIdQuery, useGetStatusHistoryQuery, useGetProjectAssigneesQuery, useGetProjectPaymentsQuery, useRecordPaymentMutation, useUpdateProjectStatusMutation, useUpdateProjectMutation, useRemoveAssigneeMutation } from '@/store/api/projectsApi';
 import { useGetEmployeesQuery } from '@/store/api/employeesApi';
 import { useCreateInvoiceFromProjectMutation } from '@/store/api/invoicesApi';
+import { useCreatePaymentLetterMutation } from '@/store/api/paymentLettersApi';
+import { useGetLetterTemplatesQuery, useGetLetterTemplateByIdQuery } from '@/store/api/letterTemplatesApi';
 import { cn, formatDate, formatCurrency } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Modal from '@/components/ui/Modal';
 import StatusPill from '@/components/ui/StatusPill';
 import DivisionBadge from '@/components/ui/DivisionBadge';
-import { ArrowLeft, Calendar, User, Clock, Phone, Mail, MapPin, UserPlus, Check, X, Banknote } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Clock, Phone, Mail, MapPin, UserPlus, Check, X, Banknote, MailIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { ProjectStatus, ProjectPaymentMethod } from '@/types/api';
@@ -47,6 +49,8 @@ export default function ProjectDetailPage() {
   const [removeAssignee] = useRemoveAssigneeMutation();
   const [recordPayment, { isLoading: isRecordingPayment }] = useRecordPaymentMutation();
   const [createInvoiceFromProject] = useCreateInvoiceFromProjectMutation();
+  const [createPaymentLetter] = useCreatePaymentLetterMutation();
+  const { data: templatesData } = useGetLetterTemplatesQuery();
 
   const project = projectData?.data;
   const statusHistory = Array.isArray(historyData?.data) ? historyData!.data : [];
@@ -62,6 +66,26 @@ export default function ProjectDetailPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ProjectPaymentMethod>('cash');
   const [paymentNote, setPaymentNote] = useState('');
+
+  const [letterModalOpen, setLetterModalOpen] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [letterForm, setLetterForm] = useState({
+    templateId: '',
+    recipientCompanyName: '',
+    recipientName: '',
+    recipientTitle: '',
+    recipientAddress: '',
+    subject: '',
+    body: '',
+    referenceNumber: '',
+    dueDate: '',
+  });
+
+  // Fetch selected template from API
+  const { data: selectedTemplateData } = useGetLetterTemplateByIdQuery(selectedTemplateId, {
+    skip: !selectedTemplateId,
+  });
+  const selectedTemplate = selectedTemplateData?.data;
 
   const nextStatuses = project ? validTransitions[project.status] : [];
 
@@ -151,6 +175,97 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const templates = templatesData?.data ?? [];
+  const defaultTemplate = templates.find((t) => t.isDefault);
+
+  // Extract values from template HTML
+  const extractValuesFromHtml = (html: string) => {
+    if (!html) return {};
+    
+    const values: Record<string, string> = {};
+    
+    // Extract recipient info - more flexible pattern
+    const toMatch = html.match(/To\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<\/div>/i);
+    if (toMatch) {
+      values.recipientCompanyName = toMatch[1].replace(/<[^>]+>/g, '').trim();
+      values.recipientTitle = toMatch[2].replace(/<[^>]+>/g, '').trim();
+      values.recipientAddress = toMatch[3].replace(/<[^>]+>/g, '').trim();
+    }
+    
+    // Extract subject - handle span with text-decoration
+    const subjectMatch = html.match(/Subject:\s*<span[^>]*>([^<]+)<\/span>/i) 
+                      || html.match(/Subject:\s*<[^>]*>([^<]+)/i);
+    if (subjectMatch) {
+      values.subject = subjectMatch[1].trim();
+    }
+    
+    // Extract body - content between subject and closing
+    const bodyMatch = html.match(/font-size:\d+px;line-height:[^"]*">\s*([\s\S]*?)\s*<\/div>\s*<div[^>]*>\s*<div[^>]*>\s*(?:Thank|Yours)/i);
+    if (bodyMatch) {
+      values.body = bodyMatch[1]
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .trim();
+    }
+    
+    return values;
+  };
+
+  // When selected template is fetched from API, extract and populate form
+  const [hasExtracted, setHasExtracted] = useState(false);
+  
+  useEffect(() => {
+    if (selectedTemplate?.htmlContent && !hasExtracted) {
+      const extracted = extractValuesFromHtml(selectedTemplate.htmlContent);
+      setLetterForm(prev => ({
+        ...prev,
+        recipientCompanyName: extracted.recipientCompanyName || prev.recipientCompanyName,
+        recipientTitle: extracted.recipientTitle || prev.recipientTitle,
+        recipientAddress: extracted.recipientAddress || prev.recipientAddress,
+        subject: extracted.subject || prev.subject,
+        body: extracted.body || prev.body,
+      }));
+      setHasExtracted(true);
+    }
+  }, [selectedTemplate, hasExtracted]);
+
+  const handleCreateLetter = async () => {
+    if (!letterForm.recipientCompanyName.trim()) {
+      toast.error('Recipient company name is required');
+      return;
+    }
+    if (!letterForm.subject.trim()) {
+      toast.error('Subject is required');
+      return;
+    }
+    if (!letterForm.body.trim()) {
+      toast.error('Body is required');
+      return;
+    }
+    try {
+      const result = await createPaymentLetter({
+        projectId,
+        customerId: project?.customerId,
+        templateId: letterForm.templateId || defaultTemplate?.id || undefined,
+        recipientCompanyName: letterForm.recipientCompanyName,
+        recipientName: letterForm.recipientName || undefined,
+        recipientTitle: letterForm.recipientTitle || undefined,
+        recipientAddress: letterForm.recipientAddress || undefined,
+        subject: letterForm.subject,
+        body: letterForm.body,
+        referenceNumber: letterForm.referenceNumber || undefined,
+        dueDate: letterForm.dueDate || undefined,
+      }).unwrap();
+      toast.success('Payment letter created');
+      setLetterModalOpen(false);
+      setLetterForm({ templateId: '', recipientCompanyName: '', recipientName: '', recipientTitle: '', recipientAddress: '', subject: '', body: '', referenceNumber: '', dueDate: '' });
+      router.push(`/dashboard/payment-letters/${result.data.id}`);
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Failed to create letter';
+      toast.error(message);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -164,7 +279,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted">Project not found</p>
-        <Button variant="outline" onClick={() => router.back()} className="mt-4">Go Back</Button>
+        <Button variant="outline" onClick={() => router.push('/dashboard/projects')} className="mt-4">Go Back</Button>
       </div>
     );
   }
@@ -173,7 +288,7 @@ export default function ProjectDetailPage() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.back()}>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/projects')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">
@@ -188,6 +303,25 @@ export default function ProjectDetailPage() {
           <UserPlus className="h-4 w-4" />
           Assign Employee
         </Button>
+        {(project.status === 'completed' || project.status === 'delivered' || project.status === 'paid') && (
+          <Button variant="secondary" onClick={() => {
+            setLetterForm({
+              templateId: defaultTemplate?.id || '',
+              recipientCompanyName: project.customer?.fullName || '',
+              recipientName: '',
+              recipientTitle: '',
+              recipientAddress: project.customer?.address || '',
+              subject: `Request for Payment for ${project.title}`,
+              body: `We are writing to formally request payment for the ${project.title} work recently completed.\n\nThe project was executed as per the agreed specifications and has been completed to the best of our ability, ensuring it meets your satisfaction.`,
+              referenceNumber: '',
+              dueDate: '',
+            });
+            setLetterModalOpen(true);
+          }}>
+            <MailIcon className="h-4 w-4" />
+            Generate Payment Letter
+          </Button>
+        )}
       </div>
 
       {/* Status Actions */}
@@ -610,6 +744,125 @@ export default function ProjectDetailPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
             <Button onClick={handleRecordPayment} loading={isRecordingPayment}>Record Payment</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Generate Payment Letter Modal */}
+      <Modal
+        open={letterModalOpen}
+        onClose={() => setLetterModalOpen(false)}
+        title="Generate Payment Letter"
+        size="lg"
+      >
+        <div className="space-y-4">
+          {templates.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Template *</label>
+              <select
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={letterForm.templateId}
+                onChange={(e) => {
+                  const templateId = e.target.value;
+                  setSelectedTemplateId(templateId);
+                  setHasExtracted(false);
+                  setLetterForm({ ...letterForm, templateId });
+                }}
+              >
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Recipient Company Name *</label>
+            <input
+              type="text"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={letterForm.recipientCompanyName}
+              onChange={(e) => setLetterForm({ ...letterForm, recipientCompanyName: e.target.value })}
+              placeholder="e.g. Awash Bank Head Office"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Contact Person</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={letterForm.recipientName}
+                onChange={(e) => setLetterForm({ ...letterForm, recipientName: e.target.value })}
+                placeholder="e.g. Ato Bekele"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Title / Department</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={letterForm.recipientTitle}
+                onChange={(e) => setLetterForm({ ...letterForm, recipientTitle: e.target.value })}
+                placeholder="e.g. Procurement Division"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Address</label>
+            <textarea
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              rows={2}
+              value={letterForm.recipientAddress}
+              onChange={(e) => setLetterForm({ ...letterForm, recipientAddress: e.target.value })}
+              placeholder="e.g. Addis Ababa, Ethiopia"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Subject *</label>
+            <input
+              type="text"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={letterForm.subject}
+              onChange={(e) => setLetterForm({ ...letterForm, subject: e.target.value })}
+              maxLength={500}
+            />
+            <p className="text-[10px] text-muted">{letterForm.subject.length}/500 characters</p>
+          </div>
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Body *</label>
+            <textarea
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold min-h-[200px]"
+              value={letterForm.body}
+              onChange={(e) => setLetterForm({ ...letterForm, body: e.target.value })}
+              placeholder="Write the letter body here. Use blank lines to separate paragraphs."
+            />
+            <p className="text-[10px] text-muted">Use blank lines to separate paragraphs</p>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Reference Number</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={letterForm.referenceNumber}
+                onChange={(e) => setLetterForm({ ...letterForm, referenceNumber: e.target.value })}
+                placeholder="e.g. AWB/PROC/2026/001"
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Due Date</label>
+              <input
+                type="date"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={letterForm.dueDate}
+                onChange={(e) => setLetterForm({ ...letterForm, dueDate: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setLetterModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateLetter}>Create Letter</Button>
           </div>
         </div>
       </Modal>

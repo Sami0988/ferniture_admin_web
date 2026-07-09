@@ -2,11 +2,12 @@ import { baseApi } from '../baseApi';
 import type { UploadResponse, ApiResponse } from '@/types/api';
 
 export const uploadsApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     uploadImage: builder.mutation<ApiResponse<UploadResponse>, File>({
       query: (file) => {
         const formData = new FormData();
-        formData.append('image', file);
+        formData.append('file', file);
         return {
           url: '/uploads/image',
           method: 'POST',
@@ -18,7 +19,7 @@ export const uploadsApi = baseApi.injectEndpoints({
     uploadDocument: builder.mutation<ApiResponse<UploadResponse>, File>({
       query: (file) => {
         const formData = new FormData();
-        formData.append('document', file);
+        formData.append('file', file);
         return {
           url: '/uploads/document',
           method: 'POST',
