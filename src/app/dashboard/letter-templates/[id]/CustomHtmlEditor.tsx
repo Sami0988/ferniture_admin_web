@@ -16,14 +16,12 @@ const TEMPLATE_FIELDS: TemplateField[] = [
   { key: 'companyPhone', label: 'Company Phone', placeholder: 'e.g. +251911670799', defaultValue: '+251911670799' },
   { key: 'companyEmail', label: 'Company Email', placeholder: 'e.g. info@company.com', defaultValue: 'kassahuntsegayeplc@gmail.com' },
   { key: 'signatoryName', label: 'Signatory Name', placeholder: 'e.g. Kassahun Tsegaye', defaultValue: 'Kassahun Tsegaye' },
-  { key: 'referenceNumber', label: 'Reference Number', placeholder: 'e.g. REF-2026-001', defaultValue: '' },
-  { key: 'dueDate', label: 'Due Date', placeholder: 'e.g. 15/07/2026', defaultValue: '' },
+  { key: 'letterNumber', label: 'Letter Number', placeholder: 'e.g. PL-2026-0001', defaultValue: '' },
   { key: 'recipientCompanyName', label: 'Recipient Company', placeholder: 'e.g. Awash Bank', defaultValue: '' },
   { key: 'recipientTitle', label: 'Recipient Title/Dept', placeholder: 'e.g. Procurement Manager', defaultValue: '' },
   { key: 'recipientAddress', label: 'Recipient Address', placeholder: 'e.g. Addis Ababa, Ethiopia', defaultValue: '' },
   { key: 'subject', label: 'Subject Line', placeholder: 'e.g. Request for Payment', defaultValue: '', type: 'textarea' },
   { key: 'body', label: 'Body Content', placeholder: 'Write your letter content here...', defaultValue: '', type: 'textarea' },
-  { key: 'closingText', label: 'Closing Text', placeholder: 'e.g. Thank you for your cooperation.', defaultValue: 'Thank you for your cooperation.' },
 ];
 
 interface CustomHtmlEditorProps {
@@ -271,8 +269,8 @@ export function generateTemplateHtml(
   </div>
 
   <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
-    <div>Reference: {{referenceNumber}}</div>
-    <div>Due Date: {{dueDate}}</div>
+    <div>Reference: {{letterNumber}}</div>
+    <div>Date: {{date}}</div>
   </div>
 
   <div style="margin-bottom: 30px; line-height: 1.6;">
@@ -291,7 +289,7 @@ export function generateTemplateHtml(
   </div>
 
   <div style="text-align: right; margin-top: 60px; line-height: 1.8;">
-    {{closingText}}<br><br>
+    Thank you for your cooperation.<br><br>
     Yours sincerely,<br>
     <strong>{{signatoryName}}</strong>
   </div>

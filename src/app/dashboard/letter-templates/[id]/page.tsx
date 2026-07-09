@@ -25,14 +25,12 @@ const DEFAULT_FIELD_VALUES: Record<string, string> = {
   companyPhone: '+251911670799',
   companyEmail: 'kassahuntsegayeplc@gmail.com',
   signatoryName: 'Kassahun Tsegaye',
-  referenceNumber: '',
-  dueDate: '',
+  letterNumber: '',
   recipientCompanyName: '',
   recipientTitle: '',
   recipientAddress: '',
   subject: '',
   body: '',
-  closingText: 'Thank you for your cooperation.',
 };
 
 export default function LetterTemplateEditorPage() {
@@ -181,14 +179,12 @@ export default function LetterTemplateEditorPage() {
     preview = preview.replace('{{companyEmail}}', fieldValues.companyEmail || DEFAULT_FIELD_VALUES.companyEmail);
     preview = preview.replace('{{signatoryName}}', fieldValues.signatoryName || DEFAULT_FIELD_VALUES.signatoryName);
     preview = preview.replace('{{date}}', new Date().toLocaleDateString('en-GB'));
-    preview = preview.replace('{{referenceNumber}}', fieldValues.referenceNumber || '');
-    preview = preview.replace('{{dueDate}}', fieldValues.dueDate || '');
+    preview = preview.replace('{{letterNumber}}', fieldValues.letterNumber || '');
     preview = preview.replace('{{recipientCompanyName}}', fieldValues.recipientCompanyName || '');
     preview = preview.replace('{{recipientTitle}}', fieldValues.recipientTitle || '');
     preview = preview.replace('{{recipientAddress}}', fieldValues.recipientAddress || '');
     preview = preview.replace('{{subject}}', fieldValues.subject || '');
     preview = preview.replace('{{body}}', (fieldValues.body || '').replace(/\n/g, '<br>'));
-    preview = preview.replace('{{closingText}}', fieldValues.closingText || DEFAULT_FIELD_VALUES.closingText);
     
     return preview;
   };

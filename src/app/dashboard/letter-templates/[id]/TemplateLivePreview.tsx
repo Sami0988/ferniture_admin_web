@@ -33,15 +33,12 @@ export default function TemplateLivePreview({ config, fieldValues = {} }: Templa
       companyEmail: company?.company_email || 'kassahuntsegayeplc@gmail.com',
       signatoryName: company?.signatory_name || 'Kassahun Tsegaye',
       date: new Date().toLocaleDateString('en-GB'),
-      letterNumber: 'PL-2026-0001',
-      referenceNumber: '',
-      dueDate: '',
+      letterNumber: '',
       recipientCompanyName: '',
       recipientTitle: '',
       recipientAddress: '',
       subject: '',
       body: '',
-      closingText: 'Thank you for your cooperation.',
     };
 
     // Use fieldValues if provided, otherwise use defaults

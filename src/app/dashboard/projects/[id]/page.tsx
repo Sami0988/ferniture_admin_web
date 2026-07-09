@@ -187,25 +187,31 @@ export default function ProjectDetailPage() {
     // Extract recipient info - more flexible pattern
     const toMatch = html.match(/To\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<\/div>/i);
     if (toMatch) {
-      values.recipientCompanyName = toMatch[1].replace(/<[^>]+>/g, '').trim();
-      values.recipientTitle = toMatch[2].replace(/<[^>]+>/g, '').trim();
-      values.recipientAddress = toMatch[3].replace(/<[^>]+>/g, '').trim();
+      const company = toMatch[1].replace(/<[^>]+>/g, '').trim();
+      const title = toMatch[2].replace(/<[^>]+>/g, '').trim();
+      const address = toMatch[3].replace(/<[^>]+>/g, '').trim();
+      // Only use if it's not a placeholder
+      if (company && !company.includes('{{')) values.recipientCompanyName = company;
+      if (title && !title.includes('{{')) values.recipientTitle = title;
+      if (address && !address.includes('{{')) values.recipientAddress = address;
     }
     
     // Extract subject - handle span with text-decoration
     const subjectMatch = html.match(/Subject:\s*<span[^>]*>([^<]+)<\/span>/i) 
                       || html.match(/Subject:\s*<[^>]*>([^<]+)/i);
     if (subjectMatch) {
-      values.subject = subjectMatch[1].trim();
+      const subject = subjectMatch[1].trim();
+      if (subject && !subject.includes('{{')) values.subject = subject;
     }
     
     // Extract body - content between subject and closing
     const bodyMatch = html.match(/font-size:\d+px;line-height:[^"]*">\s*([\s\S]*?)\s*<\/div>\s*<div[^>]*>\s*<div[^>]*>\s*(?:Thank|Yours)/i);
     if (bodyMatch) {
-      values.body = bodyMatch[1]
+      const body = bodyMatch[1]
         .replace(/<br\s*\/?>/gi, '\n')
         .replace(/<[^>]+>/g, '')
         .trim();
+      if (body && !body.includes('{{')) values.body = body;
     }
     
     return values;
