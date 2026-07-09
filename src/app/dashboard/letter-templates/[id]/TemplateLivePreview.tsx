@@ -7,9 +7,10 @@ import { useGetCompanyInfoQuery } from '@/store/api/companySettingsApi';
 
 interface TemplateLivePreviewProps {
   config: TemplateStyleConfig;
+  fieldValues?: Record<string, string>;
 }
 
-export default function TemplateLivePreview({ config }: TemplateLivePreviewProps) {
+export default function TemplateLivePreview({ config, fieldValues = {} }: TemplateLivePreviewProps) {
   const { data: companyData } = useGetCompanyInfoQuery();
   const company = companyData?.data;
 
@@ -25,7 +26,7 @@ export default function TemplateLivePreview({ config }: TemplateLivePreviewProps
         ? '<div style="width: 100%; height: 100%; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #9ca3af;">LOGO</div>'
         : '';
 
-    const sampleData: Record<string, string> = {
+    const defaults: Record<string, string> = {
       companyName: company?.company_name || 'Kassahun Tsegaye Wood and Alu Works PLC',
       companyLogo,
       companyPhone: company?.company_phone || '+251911670799',
@@ -33,19 +34,24 @@ export default function TemplateLivePreview({ config }: TemplateLivePreviewProps
       signatoryName: company?.signatory_name || 'Kassahun Tsegaye',
       date: new Date().toLocaleDateString('en-GB'),
       letterNumber: 'PL-2026-0001',
-      recipientCompanyName: 'Awash Bank Head Office',
-      recipientName: 'Ato Bekele',
-      recipientTitle: 'Procurement Division of Head Quarter',
-      recipientAddress: 'Addis Ababa, Ethiopia',
-      subject: 'Request for Payment for door repairing work at HQ 14th floor',
-      body: 'We are writing to formally request payment for the work recently completed at your facility.\n\nThe project was executed as per the agreed specifications and has been completed to the best of our ability, ensuring it meets your satisfaction.',
+      referenceNumber: '',
+      dueDate: '',
+      recipientCompanyName: '',
+      recipientTitle: '',
+      recipientAddress: '',
+      subject: '',
+      body: '',
+      closingText: 'Thank you for your cooperation.',
     };
 
-    Object.entries(sampleData).forEach(([key, value]) => {
+    // Use fieldValues if provided, otherwise use defaults
+    const replaceData = { ...defaults, ...fieldValues, companyLogo };
+
+    Object.entries(replaceData).forEach(([key, value]) => {
       html = html.replaceAll(`{{${key}}}`, value);
     });
     return html;
-  }, [config, company]);
+  }, [config, company, fieldValues]);
 
   return (
     <div className="rounded-lg border border-border bg-white overflow-hidden">

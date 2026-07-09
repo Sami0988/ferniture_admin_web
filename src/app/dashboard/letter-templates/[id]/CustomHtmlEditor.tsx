@@ -16,11 +16,13 @@ const TEMPLATE_FIELDS: TemplateField[] = [
   { key: 'companyPhone', label: 'Company Phone', placeholder: 'e.g. +251911670799', defaultValue: '+251911670799' },
   { key: 'companyEmail', label: 'Company Email', placeholder: 'e.g. info@company.com', defaultValue: 'kassahuntsegayeplc@gmail.com' },
   { key: 'signatoryName', label: 'Signatory Name', placeholder: 'e.g. Kassahun Tsegaye', defaultValue: 'Kassahun Tsegaye' },
-  { key: 'recipientCompanyName', label: 'Recipient Company', placeholder: 'e.g. Awash Bank', defaultValue: 'Awash Bank Head Office' },
-  { key: 'recipientTitle', label: 'Recipient Title/Dept', placeholder: 'e.g. Procurement Manager', defaultValue: 'Procurement Division of Head Quarter' },
-  { key: 'recipientAddress', label: 'Recipient Address', placeholder: 'e.g. Addis Ababa, Ethiopia', defaultValue: 'Addis Ababa, Ethiopia' },
-  { key: 'subject', label: 'Subject Line', placeholder: 'e.g. Request for Payment', defaultValue: 'Request for Payment for door repairing work at HQ 14th floor' },
-  { key: 'body', label: 'Body Content', placeholder: 'Write your letter content here...', defaultValue: 'We are writing to formally request payment for the work recently completed at your facility.\n\nThe project was executed as per the agreed specifications and has been completed to the best of our ability, ensuring it meets your satisfaction.', type: 'textarea' },
+  { key: 'referenceNumber', label: 'Reference Number', placeholder: 'e.g. REF-2026-001', defaultValue: '' },
+  { key: 'dueDate', label: 'Due Date', placeholder: 'e.g. 15/07/2026', defaultValue: '' },
+  { key: 'recipientCompanyName', label: 'Recipient Company', placeholder: 'e.g. Awash Bank', defaultValue: '' },
+  { key: 'recipientTitle', label: 'Recipient Title/Dept', placeholder: 'e.g. Procurement Manager', defaultValue: '' },
+  { key: 'recipientAddress', label: 'Recipient Address', placeholder: 'e.g. Addis Ababa, Ethiopia', defaultValue: '' },
+  { key: 'subject', label: 'Subject Line', placeholder: 'e.g. Request for Payment', defaultValue: '', type: 'textarea' },
+  { key: 'body', label: 'Body Content', placeholder: 'Write your letter content here...', defaultValue: '', type: 'textarea' },
   { key: 'closingText', label: 'Closing Text', placeholder: 'e.g. Thank you for your cooperation.', defaultValue: 'Thank you for your cooperation.' },
 ];
 

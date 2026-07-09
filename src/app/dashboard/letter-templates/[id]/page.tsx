@@ -25,11 +25,13 @@ const DEFAULT_FIELD_VALUES: Record<string, string> = {
   companyPhone: '+251911670799',
   companyEmail: 'kassahuntsegayeplc@gmail.com',
   signatoryName: 'Kassahun Tsegaye',
-  recipientCompanyName: 'Awash Bank Head Office',
-  recipientTitle: 'Procurement Division of Head Quarter',
-  recipientAddress: 'Addis Ababa, Ethiopia',
-  subject: 'Request for Payment for door repairing work at HQ 14th floor',
-  body: 'We are writing to formally request payment for the work recently completed at your facility.\n\nThe project was executed as per the agreed specifications and has been completed to the best of our ability, ensuring it meets your satisfaction.',
+  referenceNumber: '',
+  dueDate: '',
+  recipientCompanyName: '',
+  recipientTitle: '',
+  recipientAddress: '',
+  subject: '',
+  body: '',
   closingText: 'Thank you for your cooperation.',
 };
 
@@ -179,6 +181,14 @@ export default function LetterTemplateEditorPage() {
     preview = preview.replace('{{companyEmail}}', fieldValues.companyEmail || DEFAULT_FIELD_VALUES.companyEmail);
     preview = preview.replace('{{signatoryName}}', fieldValues.signatoryName || DEFAULT_FIELD_VALUES.signatoryName);
     preview = preview.replace('{{date}}', new Date().toLocaleDateString('en-GB'));
+    preview = preview.replace('{{referenceNumber}}', fieldValues.referenceNumber || '');
+    preview = preview.replace('{{dueDate}}', fieldValues.dueDate || '');
+    preview = preview.replace('{{recipientCompanyName}}', fieldValues.recipientCompanyName || '');
+    preview = preview.replace('{{recipientTitle}}', fieldValues.recipientTitle || '');
+    preview = preview.replace('{{recipientAddress}}', fieldValues.recipientAddress || '');
+    preview = preview.replace('{{subject}}', fieldValues.subject || '');
+    preview = preview.replace('{{body}}', (fieldValues.body || '').replace(/\n/g, '<br>'));
+    preview = preview.replace('{{closingText}}', fieldValues.closingText || DEFAULT_FIELD_VALUES.closingText);
     
     return preview;
   };
@@ -296,7 +306,7 @@ export default function LetterTemplateEditorPage() {
         {/* Right: Live Preview */}
         <div className="lg:sticky lg:top-4 lg:self-start">
           {mode === 'styled' ? (
-            <TemplateLivePreview config={styleConfig} />
+            <TemplateLivePreview config={styleConfig} fieldValues={fieldValues} />
           ) : (
             <div className="rounded-lg border border-border bg-white overflow-hidden">
               <div className="border-b border-border px-4 py-2 bg-surface-hover">
