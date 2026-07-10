@@ -23,8 +23,8 @@ export default function LetterTemplatePreviewPage() {
   useEffect(() => {
     if (!templateData?.data || !company) return;
 
-    // Generate HTML preview on frontend with actual company data
-    const html = templateData.data.htmlContent;
+    const tpl = templateData.data;
+    const html = tpl.htmlContent;
     const sampleData: Record<string, string> = {
       companyLogo: company.company_logo
         ? `<img src="${company.company_logo}" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
@@ -34,15 +34,15 @@ export default function LetterTemplatePreviewPage() {
       companyEmail: company.company_email || 'kassahuntsegayeplc@gmail.com',
       signatoryName: company.signatory_name || 'Kassahun Tsegaye',
       date: new Date().toLocaleDateString('en-GB'),
-      letterNumber: 'PL-2026-0001',
-      referenceNumber: 'AWS/PROC/2026/001',
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }),
-      recipientCompanyName: 'Sample Recipient Company',
+      letterNumber: tpl.referenceNumber || 'PL-2026-0001',
+      referenceNumber: tpl.referenceNumber || 'AWS/PROC/2026/001',
+      dueDate: tpl.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }),
+      recipientCompanyName: tpl.recipientCompanyName || 'Sample Recipient Company',
       recipientName: '',
-      recipientTitle: 'Procurement Department',
-      recipientAddress: 'Addis Ababa, Ethiopia',
-      subject: 'Request for Payment',
-      body: 'We are writing to formally request payment for the work recently completed.<br><br>The project was executed as per the agreed specifications.',
+      recipientTitle: tpl.recipientTitle || 'Procurement Department',
+      recipientAddress: tpl.recipientAddress || 'Addis Ababa, Ethiopia',
+      subject: tpl.subject || 'Request for Payment',
+      body: (tpl.body || 'We are writing to formally request payment for the work recently completed.').replace(/\n/g, '<br>'),
       closingText: 'Thank you for your cooperation.',
     };
 

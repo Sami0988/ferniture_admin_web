@@ -72,7 +72,6 @@ export default function ProjectDetailPage() {
   const [letterForm, setLetterForm] = useState({
     templateId: '',
     recipientCompanyName: '',
-    recipientName: '',
     recipientTitle: '',
     recipientAddress: '',
     subject: '',
@@ -178,58 +177,20 @@ export default function ProjectDetailPage() {
   const templates = templatesData?.data ?? [];
   const defaultTemplate = templates.find((t) => t.isDefault);
 
-  // Extract values from template HTML
-  const extractValuesFromHtml = (html: string) => {
-    if (!html) return {};
-    
-    const values: Record<string, string> = {};
-    
-    // Extract recipient info - more flexible pattern
-    const toMatch = html.match(/To\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<br\s*\/?>\s*([\s\S]*?)\s*<\/div>/i);
-    if (toMatch) {
-      const company = toMatch[1].replace(/<[^>]+>/g, '').trim();
-      const title = toMatch[2].replace(/<[^>]+>/g, '').trim();
-      const address = toMatch[3].replace(/<[^>]+>/g, '').trim();
-      // Only use if it's not a placeholder
-      if (company && !company.includes('{{')) values.recipientCompanyName = company;
-      if (title && !title.includes('{{')) values.recipientTitle = title;
-      if (address && !address.includes('{{')) values.recipientAddress = address;
-    }
-    
-    // Extract subject - handle span with text-decoration
-    const subjectMatch = html.match(/Subject:\s*<span[^>]*>([^<]+)<\/span>/i) 
-                      || html.match(/Subject:\s*<[^>]*>([^<]+)/i);
-    if (subjectMatch) {
-      const subject = subjectMatch[1].trim();
-      if (subject && !subject.includes('{{')) values.subject = subject;
-    }
-    
-    // Extract body - content between subject and closing
-    const bodyMatch = html.match(/font-size:\d+px;line-height:[^"]*">\s*([\s\S]*?)\s*<\/div>\s*<div[^>]*>\s*<div[^>]*>\s*(?:Thank|Yours)/i);
-    if (bodyMatch) {
-      const body = bodyMatch[1]
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .trim();
-      if (body && !body.includes('{{')) values.body = body;
-    }
-    
-    return values;
-  };
-
-  // When selected template is fetched from API, extract and populate form
+  // When selected template is fetched from API, populate form with template fields
   const [hasExtracted, setHasExtracted] = useState(false);
   
   useEffect(() => {
-    if (selectedTemplate?.htmlContent && !hasExtracted) {
-      const extracted = extractValuesFromHtml(selectedTemplate.htmlContent);
+    if (selectedTemplate && !hasExtracted) {
       setLetterForm(prev => ({
         ...prev,
-        recipientCompanyName: extracted.recipientCompanyName || prev.recipientCompanyName,
-        recipientTitle: extracted.recipientTitle || prev.recipientTitle,
-        recipientAddress: extracted.recipientAddress || prev.recipientAddress,
-        subject: extracted.subject || prev.subject,
-        body: extracted.body || prev.body,
+        recipientCompanyName: selectedTemplate.recipientCompanyName || prev.recipientCompanyName,
+        recipientTitle: selectedTemplate.recipientTitle || prev.recipientTitle,
+        recipientAddress: selectedTemplate.recipientAddress || prev.recipientAddress,
+        subject: selectedTemplate.subject || prev.subject,
+        body: selectedTemplate.body || prev.body,
+        referenceNumber: selectedTemplate.referenceNumber || prev.referenceNumber,
+        dueDate: selectedTemplate.dueDate || prev.dueDate,
       }));
       setHasExtracted(true);
     }
@@ -254,7 +215,6 @@ export default function ProjectDetailPage() {
         customerId: project?.customerId,
         templateId: letterForm.templateId || defaultTemplate?.id || undefined,
         recipientCompanyName: letterForm.recipientCompanyName,
-        recipientName: letterForm.recipientName || undefined,
         recipientTitle: letterForm.recipientTitle || undefined,
         recipientAddress: letterForm.recipientAddress || undefined,
         subject: letterForm.subject,
@@ -264,7 +224,7 @@ export default function ProjectDetailPage() {
       }).unwrap();
       toast.success('Payment letter created');
       setLetterModalOpen(false);
-      setLetterForm({ templateId: '', recipientCompanyName: '', recipientName: '', recipientTitle: '', recipientAddress: '', subject: '', body: '', referenceNumber: '', dueDate: '' });
+      setLetterForm({ templateId: '', recipientCompanyName: '', recipientTitle: '', recipientAddress: '', subject: '', body: '', referenceNumber: '', dueDate: '' });
       router.push(`/dashboard/payment-letters/${result.data.id}`);
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to create letter';
@@ -314,7 +274,6 @@ export default function ProjectDetailPage() {
             setLetterForm({
               templateId: defaultTemplate?.id || '',
               recipientCompanyName: project.customer?.fullName || '',
-              recipientName: '',
               recipientTitle: '',
               recipientAddress: project.customer?.address || '',
               subject: `Request for Payment for ${project.title}`,
@@ -791,18 +750,7 @@ export default function ProjectDetailPage() {
               placeholder="e.g. Awash Bank Head Office"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-foreground">Contact Person</label>
-              <input
-                type="text"
-                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-                value={letterForm.recipientName}
-                onChange={(e) => setLetterForm({ ...letterForm, recipientName: e.target.value })}
-                placeholder="e.g. Ato Bekele"
-              />
-            </div>
-            <div className="space-y-1.5">
+          <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Title / Department</label>
               <input
                 type="text"
@@ -811,7 +759,6 @@ export default function ProjectDetailPage() {
                 onChange={(e) => setLetterForm({ ...letterForm, recipientTitle: e.target.value })}
                 placeholder="e.g. Procurement Division"
               />
-            </div>
           </div>
           <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">Address</label>

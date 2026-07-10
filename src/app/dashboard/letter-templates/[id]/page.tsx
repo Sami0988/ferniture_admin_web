@@ -66,6 +66,18 @@ export default function LetterTemplateEditorPage() {
       const tpl = templateData.data;
       setName(tpl.name);
       setDescription(tpl.description || '');
+      // Load template fields if they exist
+      if (tpl.recipientCompanyName || tpl.recipientTitle || tpl.recipientAddress || tpl.subject || tpl.body || tpl.referenceNumber) {
+        setFieldValues(prev => ({
+          ...prev,
+          recipientCompanyName: tpl.recipientCompanyName || prev.recipientCompanyName,
+          recipientTitle: tpl.recipientTitle || prev.recipientTitle,
+          recipientAddress: tpl.recipientAddress || prev.recipientAddress,
+          subject: tpl.subject || prev.subject,
+          body: tpl.body || prev.body,
+          letterNumber: tpl.referenceNumber || prev.letterNumber,
+        }));
+      }
       // Detect if it's a custom HTML or styled template based on content
       if (tpl.htmlContent) {
         // If it has unfilled placeholders, it's a styled template
@@ -142,11 +154,23 @@ export default function LetterTemplateEditorPage() {
     }
     const htmlContent = getHtmlContent();
     try {
+      const templateData = {
+        name,
+        description: description || undefined,
+        htmlContent,
+        recipientCompanyName: fieldValues.recipientCompanyName || undefined,
+        recipientTitle: fieldValues.recipientTitle || undefined,
+        recipientAddress: fieldValues.recipientAddress || undefined,
+        subject: fieldValues.subject || undefined,
+        body: fieldValues.body || undefined,
+        referenceNumber: fieldValues.letterNumber || undefined,
+        dueDate: undefined,
+      };
       if (isNew) {
-        await createTemplate({ name, description: description || undefined, htmlContent }).unwrap();
+        await createTemplate(templateData).unwrap();
         toast.success('Template created');
       } else {
-        await updateTemplate({ id: params.id as string, data: { name, description: description || undefined, htmlContent } }).unwrap();
+        await updateTemplate({ id: params.id as string, data: templateData }).unwrap();
         toast.success('Template updated');
       }
       router.push('/dashboard/letter-templates');

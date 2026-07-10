@@ -749,6 +749,13 @@ export interface ApiLetterTemplate {
   cssContent?: string;
   isDefault: boolean;
   usageCount?: number;
+  recipientCompanyName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject?: string;
+  body?: string;
+  referenceNumber?: string;
+  dueDate?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -759,6 +766,13 @@ export interface CreateLetterTemplateRequest {
   description?: string;
   htmlContent: string;
   cssContent?: string;
+  recipientCompanyName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject?: string;
+  body?: string;
+  referenceNumber?: string;
+  dueDate?: string;
 }
 
 export interface UpdateLetterTemplateRequest {
@@ -766,6 +780,13 @@ export interface UpdateLetterTemplateRequest {
   description?: string;
   htmlContent?: string;
   cssContent?: string;
+  recipientCompanyName?: string;
+  recipientTitle?: string;
+  recipientAddress?: string;
+  subject?: string;
+  body?: string;
+  referenceNumber?: string;
+  dueDate?: string;
 }
 
 // ── Payment Letters ─────────────────────────────────────────
