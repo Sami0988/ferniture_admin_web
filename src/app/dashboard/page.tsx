@@ -22,6 +22,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useGetDashboardReportQuery } from '@/store/api/reportsApi';
 
+// Main dashboard page — displays KPIs, charts, recent projects & payments
 export default function DashboardPage() {
   const { data: reportData, isLoading } = useGetDashboardReportQuery();
   const dashboard = reportData?.data;
