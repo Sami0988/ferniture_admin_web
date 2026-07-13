@@ -58,7 +58,7 @@ function buildModernHeader(config: TemplateStyleConfig): string {
 }
 
 export function buildTemplateHtml(config: TemplateStyleConfig): string {
-  const { headerStyle, subject, body, closing, footer } = config;
+  const { headerStyle, subject, body, closing } = config;
 
   const headerHtml =
     headerStyle === "modern"

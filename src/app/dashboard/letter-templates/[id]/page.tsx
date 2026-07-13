@@ -61,41 +61,6 @@ export default function LetterTemplateEditorPage() {
   const [showPhoneInFooter, setShowPhoneInFooter] = useState(true);
   const [showEmailInFooter, setShowEmailInFooter] = useState(true);
 
-  useEffect(() => {
-    if (templateData?.data) {
-      const tpl = templateData.data;
-      setName(tpl.name);
-      setDescription(tpl.description || '');
-      // Load template fields if they exist
-      if (tpl.recipientCompanyName || tpl.recipientTitle || tpl.recipientAddress || tpl.subject || tpl.body || tpl.referenceNumber) {
-        setFieldValues(prev => ({
-          ...prev,
-          recipientCompanyName: tpl.recipientCompanyName || prev.recipientCompanyName,
-          recipientTitle: tpl.recipientTitle || prev.recipientTitle,
-          recipientAddress: tpl.recipientAddress || prev.recipientAddress,
-          subject: tpl.subject || prev.subject,
-          body: tpl.body || prev.body,
-          letterNumber: tpl.referenceNumber || prev.letterNumber,
-        }));
-      }
-      // Detect if it's a custom HTML or styled template based on content
-      if (tpl.htmlContent) {
-        // If it has unfilled placeholders, it's a styled template
-        // If placeholders are replaced with actual values, it's a custom template
-        const hasPlaceholders = tpl.htmlContent.includes('{{recipientCompanyName}}') || 
-                               tpl.htmlContent.includes('{{subject}}') ||
-                               tpl.htmlContent.includes('{{body}}');
-        if (hasPlaceholders) {
-          setMode('styled');
-        } else {
-          setMode('custom');
-          // Extract field values from the HTML
-          extractFieldValuesFromHtml(tpl.htmlContent);
-        }
-      }
-    }
-  }, [templateData]);
-
   const extractFieldValuesFromHtml = (html: string) => {
     const newFieldValues = { ...DEFAULT_FIELD_VALUES };
     
@@ -132,6 +97,41 @@ export default function LetterTemplateEditorPage() {
     
     setFieldValues(newFieldValues);
   };
+
+  useEffect(() => {
+    if (templateData?.data) {
+      const tpl = templateData.data;
+      setName(tpl.name);
+      setDescription(tpl.description || '');
+      // Load template fields if they exist
+      if (tpl.recipientCompanyName || tpl.recipientTitle || tpl.recipientAddress || tpl.subject || tpl.body || tpl.referenceNumber) {
+        setFieldValues(prev => ({
+          ...prev,
+          recipientCompanyName: tpl.recipientCompanyName || prev.recipientCompanyName,
+          recipientTitle: tpl.recipientTitle || prev.recipientTitle,
+          recipientAddress: tpl.recipientAddress || prev.recipientAddress,
+          subject: tpl.subject || prev.subject,
+          body: tpl.body || prev.body,
+          letterNumber: tpl.referenceNumber || prev.letterNumber,
+        }));
+      }
+      // Detect if it's a custom HTML or styled template based on content
+      if (tpl.htmlContent) {
+        // If it has unfilled placeholders, it's a styled template
+        // If placeholders are replaced with actual values, it's a custom template
+        const hasPlaceholders = tpl.htmlContent.includes('{{recipientCompanyName}}') || 
+                               tpl.htmlContent.includes('{{subject}}') ||
+                               tpl.htmlContent.includes('{{body}}');
+        if (hasPlaceholders) {
+          setMode('styled');
+        } else {
+          setMode('custom');
+          // Extract field values from the HTML
+          extractFieldValuesFromHtml(tpl.htmlContent);
+        }
+      }
+    }
+  }, [templateData]);
 
   const getHtmlContent = () => {
     if (mode === 'styled') {

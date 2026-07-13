@@ -55,28 +55,6 @@ function detectStyleConfig(html: string): TemplateStyleConfig {
   return config;
 }
 
-function extractFieldValues(html: string): Record<string, string> {
-  const fields = { ...DEFAULT_FIELD_VALUES };
-
-  const toMatch = html.match(
-    /To<br\s*\/?>\s*([^<\n]+)<br\s*\/?>\s*([^<\n]+)<br\s*\/?>\s*([^<\n]+)/i,
-  );
-  if (toMatch) {
-    fields.recipientCompanyName = toMatch[1].trim();
-    fields.recipientTitle = toMatch[2].trim();
-    fields.recipientAddress = toMatch[3].trim();
-  }
-
-  const subjectMatch = html.match(
-    /Subject:\s*(?:<[^>]+>)*([^<]+)/i,
-  );
-  if (subjectMatch) {
-    fields.subject = subjectMatch[1].trim();
-  }
-
-  return fields;
-}
-
 export default function LetterTemplatePreviewPage() {
   const params = useParams();
   const router = useRouter();
@@ -113,7 +91,6 @@ export default function LetterTemplatePreviewPage() {
     const tpl = templateData.data;
     const html: string = tpl.htmlContent || "";
 
-    const isModern = html.includes("rotate(45deg)") || html.includes("clip-path");
     const companyLogo = company.company_logo
       ? `<img src="${company.company_logo}" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
       : '<div style="width:50px;height:50px;background:#f3f4f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#9ca3af;">LOGO</div>';

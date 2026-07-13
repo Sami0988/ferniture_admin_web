@@ -38,7 +38,7 @@ export default function MaterialDetailPage() {
       <div className="text-center py-12">
         <Palette className="h-12 w-12 text-muted mx-auto mb-4" />
         <h2 className="text-lg font-semibold text-foreground">Material not found</h2>
-        <p className="text-sm text-muted mt-1">The material you're looking for doesn't exist.</p>
+        <p className="text-sm text-muted mt-1">The material you&apos;re looking for doesn&apos;t exist.</p>
         <Button className="mt-4" onClick={() => router.push('/dashboard/materials')}>
           Back to Materials
         </Button>

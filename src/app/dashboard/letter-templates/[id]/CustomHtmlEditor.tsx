@@ -282,8 +282,6 @@ export function generateTemplateHtml(
   const bodySize = BODY_SIZE_MAP[styles.bodyFontSize] || '15px';
   const accent = styles.headerAccentColor;
   const bg = styles.headerBackgroundColor;
-  
-  const bodyContent = get('body').replace(/\n/g, '<br>');
 
   return `
 <!DOCTYPE html>

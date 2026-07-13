@@ -133,7 +133,7 @@ export default function PaymentLetterDetailPage() {
     }
 
     // Detect style config from stored template or use defaults
-    let config: TemplateStyleConfig = { ...DEFAULT_STYLE_CONFIG };
+    const config: TemplateStyleConfig = { ...DEFAULT_STYLE_CONFIG };
     if (template?.htmlContent) {
       const html = template.htmlContent;
       const colorRegex = /(?:background(?:-color)?:\s*)(#[0-9a-fA-F]{3,8})/g;

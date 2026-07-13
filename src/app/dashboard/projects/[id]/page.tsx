@@ -591,7 +591,7 @@ export default function ProjectDetailPage() {
                           {entry.oldStatus.replace('_', ' ')} → {entry.newStatus.replace('_', ' ')}
                         </p>
                         {entry.notes && (
-                          <p className="text-[10px] text-muted mt-0.5 italic">"{entry.notes}"</p>
+                          <p className="text-[10px] text-muted mt-0.5 italic">&quot;{entry.notes}&quot;</p>
                         )}
                         <p className="text-[10px] text-muted">{formatDate(entry.changedAt)}</p>
                       </div>

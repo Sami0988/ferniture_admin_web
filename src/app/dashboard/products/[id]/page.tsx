@@ -28,7 +28,7 @@ export default function ProductDetailPage() {
       <div className="text-center py-12">
         <Package className="h-12 w-12 text-muted mx-auto mb-4" />
         <h2 className="text-lg font-semibold text-foreground">Product not found</h2>
-        <p className="text-sm text-muted mt-1">The product you're looking for doesn't exist.</p>
+        <p className="text-sm text-muted mt-1">The product you&apos;re looking for doesn&apos;t exist.</p>
         <Button className="mt-4" onClick={() => router.push('/dashboard/products')}>
           Back to Products
         </Button>
