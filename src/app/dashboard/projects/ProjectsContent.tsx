@@ -92,6 +92,8 @@ export default function ProjectsContent() {
   const [formDeliveryDate, setFormDeliveryDate] = useState('');
   const [formTotalPrice, setFormTotalPrice] = useState('');
   const [formPaidNowPrice, setFormPaidNowPrice] = useState('');
+  const [formBranchName, setFormBranchName] = useState('');
+  const [formCity, setFormCity] = useState('');
 
   // New customer form state
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
@@ -157,6 +159,8 @@ export default function ProjectsContent() {
         priority: formPriority,
         totalPrice: formTotalPrice ? parseFloat(formTotalPrice) : undefined,
         paidNowPrice: formPaidNowPrice ? parseFloat(formPaidNowPrice) : undefined,
+        branchName: formBranchName || undefined,
+        city: formCity || undefined,
       }).unwrap();
       toast.success('Project created successfully');
       setCreateModalOpen(false);
@@ -167,6 +171,8 @@ export default function ProjectsContent() {
       setFormDeliveryDate('');
       setFormTotalPrice('');
       setFormPaidNowPrice('');
+      setFormBranchName('');
+      setFormCity('');
       setCreateNewCustomer(false);
       setNewCustomerName('');
       setNewCustomerPhone('');
@@ -647,6 +653,28 @@ export default function ProjectsContent() {
                 className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
                 value={formDeliveryDate}
                 onChange={(e) => setFormDeliveryDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">Branch Name</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={formBranchName}
+                onChange={(e) => setFormBranchName(e.target.value)}
+                placeholder="e.g. 6 Killo Branch"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-foreground">City</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                value={formCity}
+                onChange={(e) => setFormCity(e.target.value)}
+                placeholder="e.g. Addis Ababa"
               />
             </div>
           </div>

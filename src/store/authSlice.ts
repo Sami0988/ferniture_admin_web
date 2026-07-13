@@ -21,10 +21,10 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
-function setCookie(name: string, value: string, days = 7) {
+function setCookie(name: string, value: string, days?: number) {
   if (typeof document === 'undefined') return;
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+  const expires = days != null ? `; expires=${new Date(Date.now() + days * 864e5).toUTCString()}` : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Lax`;
 }
 
 function removeCookie(name: string) {
@@ -32,36 +32,43 @@ function removeCookie(name: string) {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
 }
 
+function getStoredToken(key: 'accessToken' | 'refreshToken'): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key) || sessionStorage.getItem(key);
+}
+
 const initialState: AuthState = {
-  accessToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null,
-  refreshToken: typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null,
-  isAuthenticated: typeof window !== 'undefined' ? !!localStorage.getItem('accessToken') : false,
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || 'null') : null,
+  accessToken: getStoredToken('accessToken'),
+  refreshToken: getStoredToken('refreshToken'),
+  isAuthenticated: typeof window !== 'undefined' ? !!(localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')) : false,
+  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null') : null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: AuthState['user']; tokens: { accessToken: string; refreshToken: string } }>) => {
+    setCredentials: (state, action: PayloadAction<{ user: AuthState['user']; tokens: { accessToken: string; refreshToken: string }; rememberMe?: boolean }>) => {
       state.user = action.payload.user;
       state.accessToken = action.payload.tokens.accessToken;
       state.refreshToken = action.payload.tokens.refreshToken;
       state.isAuthenticated = true;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('accessToken', action.payload.tokens.accessToken);
-        localStorage.setItem('refreshToken', action.payload.tokens.refreshToken);
-        localStorage.setItem('user', JSON.stringify(action.payload.user));
-        setCookie('accessToken', action.payload.tokens.accessToken);
-        setCookie('refreshToken', action.payload.tokens.refreshToken);
+        const storage = action.payload.rememberMe !== false ? localStorage : sessionStorage;
+        storage.setItem('accessToken', action.payload.tokens.accessToken);
+        storage.setItem('refreshToken', action.payload.tokens.refreshToken);
+        storage.setItem('user', JSON.stringify(action.payload.user));
+        setCookie('accessToken', action.payload.tokens.accessToken, action.payload.rememberMe !== false ? 7 : undefined);
+        setCookie('refreshToken', action.payload.tokens.refreshToken, action.payload.rememberMe !== false ? 7 : undefined);
       }
     },
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('accessToken', action.payload.accessToken);
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
+        storage.setItem('accessToken', action.payload.accessToken);
+        storage.setItem('refreshToken', action.payload.refreshToken);
         setCookie('accessToken', action.payload.accessToken);
         setCookie('refreshToken', action.payload.refreshToken);
       }
@@ -78,6 +85,9 @@ const authSlice = createSlice({
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('user');
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+        sessionStorage.removeItem('user');
         removeCookie('accessToken');
         removeCookie('refreshToken');
       }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Card from '@/components/ui/Card';
 
 interface TemplateField {
@@ -9,7 +9,16 @@ interface TemplateField {
   placeholder: string;
   defaultValue: string;
   type?: 'text' | 'textarea';
+  showKeywords?: boolean;
 }
+
+const BODY_KEYWORDS = [
+  { tag: '<project>', label: 'Project Name' },
+  { tag: '<branch>', label: 'Branch' },
+  { tag: '<city>', label: 'City' },
+  { tag: '<location>', label: 'Location' },
+  { tag: '<price>', label: 'Price (ETB)' },
+];
 
 const TEMPLATE_FIELDS: TemplateField[] = [
   { key: 'companyName', label: 'Company Name', placeholder: 'e.g. Kassahun Tsegaye Wood and Alu Works PLC', defaultValue: 'Kassahun Tsegaye Wood and Alu Works PLC' },
@@ -21,7 +30,7 @@ const TEMPLATE_FIELDS: TemplateField[] = [
   { key: 'recipientTitle', label: 'Recipient Title/Dept', placeholder: 'e.g. Procurement Manager', defaultValue: '' },
   { key: 'recipientAddress', label: 'Recipient Address', placeholder: 'e.g. Addis Ababa, Ethiopia', defaultValue: '' },
   { key: 'subject', label: 'Subject Line', placeholder: 'e.g. Request for Payment', defaultValue: '', type: 'textarea' },
-  { key: 'body', label: 'Body Content', placeholder: 'Write your letter content here...', defaultValue: '', type: 'textarea' },
+  { key: 'body', label: 'Body Content', placeholder: 'Write your letter content here...', defaultValue: '', type: 'textarea', showKeywords: true },
 ];
 
 interface CustomHtmlEditorProps {
@@ -58,10 +67,36 @@ export default function CustomHtmlEditor({
   onShowEmailInFooterChange,
 }: CustomHtmlEditorProps) {
   const [activeTab, setActiveTab] = useState<'fields' | 'style'>('fields');
+  const textareaRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
 
   const updateField = (key: string, value: string) => {
     onFieldValuesChange({ ...fieldValues, [key]: value });
   };
+
+  const insertAtCursor = useCallback((key: string, tag: string) => {
+    const textarea = textareaRefs.current[key];
+    if (!textarea) {
+      // Fallback: append to end
+      const current = fieldValues[key] || '';
+      updateField(key, current + (current && !current.endsWith(' ') ? ' ' : '') + tag + ' ');
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const current = fieldValues[key] || '';
+    const before = current.substring(0, start);
+    const after = current.substring(end);
+    const needsSpaceBefore = before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+    const needsSpaceAfter = after.length > 0 && !after.startsWith(' ') && !after.startsWith('\n');
+    const newValue = before + (needsSpaceBefore ? ' ' : '') + tag + (needsSpaceAfter ? ' ' : '') + after;
+    updateField(key, newValue);
+    // Restore cursor position after the inserted tag
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + tag.length + (needsSpaceBefore ? 1 : 0) + (needsSpaceAfter ? 1 : 0);
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  }, [fieldValues]);
 
   return (
     <div className="space-y-4">
@@ -97,6 +132,7 @@ export default function CustomHtmlEditor({
                 <label className="block text-sm font-medium text-foreground">{field.label}</label>
                 {field.type === 'textarea' ? (
                   <textarea
+                    ref={(el) => { textareaRefs.current[field.key] = el; }}
                     className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold min-h-[120px] resize-y"
                     value={fieldValues[field.key] || field.defaultValue}
                     onChange={(e) => updateField(field.key, e.target.value)}
@@ -110,6 +146,21 @@ export default function CustomHtmlEditor({
                     onChange={(e) => updateField(field.key, e.target.value)}
                     placeholder={field.placeholder}
                   />
+                )}
+                {field.showKeywords && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[10px] text-muted self-center">Insert:</span>
+                    {BODY_KEYWORDS.map((kw) => (
+                      <button
+                        key={kw.tag}
+                        type="button"
+                        onClick={() => insertAtCursor(field.key, kw.tag)}
+                        className="inline-flex items-center rounded-md bg-brand-gold/10 border border-brand-gold/20 px-2 py-0.5 text-[10px] font-medium text-brand-gold hover:bg-brand-gold/20 transition-colors"
+                      >
+                        {kw.tag}
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
@@ -239,33 +290,30 @@ export function generateTemplateHtml(
 <html>
 <head>
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 40px; color: #333; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 40px; color: #333; display: flex; flex-direction: column; min-height: 100vh; }
   </style>
 </head>
 <body>
-  <div style="position: relative; height: 110px; margin-bottom: 25px; overflow: visible;">
-    <div style="position: absolute; top: 0; left: 0; width: 220px; height: 130px; overflow: hidden;">
-      <div style="position: absolute; top: -30px; left: -40px; width: 140px; height: 180px; background: ${bg}; transform: rotate(-15deg);"></div>
-      <div style="position: absolute; top: -30px; left: 10px; width: 100px; height: 180px; background: ${accent}; transform: rotate(-15deg);"></div>
-      <div style="position: absolute; top: -30px; left: 50px; width: 60px; height: 180px; background: ${bg}; transform: rotate(-15deg);"></div>
+  <div style="position: relative; height: 100px; margin-bottom: 25px; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; width: 180px; height: 100px; overflow: hidden;">
+      <div style="position: absolute; top: -50px; left: -60px; width: 120px; height: 200px; background: ${bg}; transform: rotate(-20deg);"></div>
+      <div style="position: absolute; top: -50px; left: -10px; width: 80px; height: 200px; background: ${accent}; transform: rotate(-20deg);"></div>
+      <div style="position: absolute; top: -50px; left: 30px; width: 50px; height: 200px; background: ${bg}; transform: rotate(-20deg);"></div>
     </div>
-    <div style="position: absolute; top: 10px; left: 50px; z-index: 2;">
-      <div style="width: 80px; height: 80px; background: ${accent}; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; box-shadow: 2px 2px 8px rgba(0,0,0,0.2);">
-        <div style="width: 68px; height: 68px; background: white; border-radius: 50%; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+    <div style="position: absolute; top: 8px; left: 45px; z-index: 2;">
+      <div style="width: 75px; height: 75px; background: ${accent}; transform: rotate(45deg); display: flex; align-items: center; justify-content: center;">
+        <div style="width: 62px; height: 62px; background: white; border-radius: 50%; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
           {{companyLogo}}
         </div>
       </div>
     </div>
-    <div style="position: absolute; top: 20px; left: 130px; right: 20px; height: 70px; z-index: 1;">
-      <div style="position: absolute; inset: 0; background: ${accent}; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);"></div>
-      <div style="position: absolute; inset: 3px; background: ${bg}; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%); display: flex; align-items: center; justify-content: center; padding: 0 40px;">
-        <span style="font-size: ${nameSize}; font-weight: bold; color: white; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; text-align: center;">{{companyName}}</span>
+    <div style="position: absolute; top: 15px; left: 130px; right: 0; height: 65px; z-index: 1;">
+      <div style="height: 100%; background: ${accent}; padding: 3px;">
+        <div style="height: 100%; background: ${bg}; display: flex; align-items: center; justify-content: center; padding: 0 30px;">
+          <span style="font-size: ${nameSize}; font-weight: bold; color: white; letter-spacing: 1px; white-space: normal; overflow: visible; max-width: 100%; display: block; text-align: center;">{{companyName}}</span>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div style="text-align: right; margin: 20px 0; font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
-    Date: {{date}}
   </div>
 
   <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 13px;">
@@ -294,7 +342,7 @@ export function generateTemplateHtml(
     <strong>{{signatoryName}}</strong>
   </div>
 
-  <div style="border-top: 1px solid #ccc; margin-top: 40px; font-size: 11px; display: flex; justify-content: space-between;">
+  <div style="border-top: 1px solid #ccc; margin-top: auto; padding-top: 10px; font-size: 11px; display: flex; justify-content: space-between;">
     ${styles.showPhoneInFooter ? `<span>Phone: {{companyPhone}}</span>` : '<span></span>'}
     ${styles.showEmailInFooter ? `<span>Email: {{companyEmail}}</span>` : ''}
   </div>

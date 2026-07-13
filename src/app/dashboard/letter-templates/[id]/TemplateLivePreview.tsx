@@ -47,6 +47,12 @@ export default function TemplateLivePreview({ config, fieldValues = {} }: Templa
     Object.entries(replaceData).forEach(([key, value]) => {
       html = html.replaceAll(`{{${key}}}`, value);
     });
+    // Replace project tags with placeholder dashes for preview
+    html = html.replace(/<branch>/gi, '___________________');
+    html = html.replace(/<city>/gi, '___________________');
+    html = html.replace(/<location>/gi, '___________________');
+    html = html.replace(/<price>/gi, '___________________');
+    html = html.replace(/<project>/gi, '___________________');
     return html;
   }, [config, company, fieldValues]);
 

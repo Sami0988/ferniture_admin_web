@@ -32,7 +32,7 @@ export const useAuth = () => {
     user,
     isAuthenticated,
     accessToken,
-    setCredentials: (payload: { user: typeof user; tokens: { accessToken: string; refreshToken: string } }) =>
+    setCredentials: (payload: { user: typeof user; tokens: { accessToken: string; refreshToken: string }; rememberMe?: boolean }) =>
       dispatch(setCredentials(payload)),
     setUser: (userData: typeof user) => dispatch(setUser(userData)),
     logout: () => dispatch(authLogout()),

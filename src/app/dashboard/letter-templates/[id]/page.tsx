@@ -209,6 +209,11 @@ export default function LetterTemplateEditorPage() {
     preview = preview.replace('{{recipientAddress}}', fieldValues.recipientAddress || '');
     preview = preview.replace('{{subject}}', fieldValues.subject || '');
     preview = preview.replace('{{body}}', (fieldValues.body || '').replace(/\n/g, '<br>'));
+    preview = preview.replace(/<branch>/gi, '___________________');
+    preview = preview.replace(/<city>/gi, '___________________');
+    preview = preview.replace(/<location>/gi, '___________________');
+    preview = preview.replace(/<price>/gi, '___________________');
+    preview = preview.replace(/<project>/gi, '___________________');
     
     return preview;
   };

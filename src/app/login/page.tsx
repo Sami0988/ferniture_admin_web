@@ -13,6 +13,7 @@ function LoginForm() {
   const [email, setEmail] = useState('admin@kassahun.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -45,6 +46,7 @@ function LoginForm() {
           avatar: user.avatarUrl || user.avatar || null,
         },
         tokens: { accessToken, refreshToken },
+        rememberMe,
       });
 
       await router.push(redirectTo);
@@ -145,8 +147,13 @@ function LoginForm() {
                 </button>
               </div>
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-muted">
-                  <input type="checkbox" className="rounded border-border" />
+                <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="rounded border-border"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                  />
                   Remember me
                 </label>
                 <Link href="/login/forgot-password" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">

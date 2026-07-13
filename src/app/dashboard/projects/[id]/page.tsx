@@ -182,19 +182,33 @@ export default function ProjectDetailPage() {
   
   useEffect(() => {
     if (selectedTemplate && !hasExtracted) {
+      // Replace project-specific tags in template body
+      let body = selectedTemplate.body || '';
+      if (project) {
+        const branch = project.branchName || '';
+        const city = project.city || '';
+        const price = project.totalPrice ? project.totalPrice.toLocaleString() : '';
+        const projectTitle = project.title || '';
+        body = body.replace(/<branch>/gi, branch);
+        body = body.replace(/<city>/gi, city);
+        body = body.replace(/<location>/gi, city);
+        body = body.replace(/<price>/gi, price);
+        body = body.replace(/<project>/gi, projectTitle);
+      }
+
       setLetterForm(prev => ({
         ...prev,
         recipientCompanyName: selectedTemplate.recipientCompanyName || prev.recipientCompanyName,
         recipientTitle: selectedTemplate.recipientTitle || prev.recipientTitle,
         recipientAddress: selectedTemplate.recipientAddress || prev.recipientAddress,
         subject: selectedTemplate.subject || prev.subject,
-        body: selectedTemplate.body || prev.body,
+        body,
         referenceNumber: selectedTemplate.referenceNumber || prev.referenceNumber,
         dueDate: selectedTemplate.dueDate || prev.dueDate,
       }));
       setHasExtracted(true);
     }
-  }, [selectedTemplate, hasExtracted]);
+  }, [selectedTemplate, hasExtracted, project]);
 
   const handleCreateLetter = async () => {
     if (!letterForm.recipientCompanyName.trim()) {

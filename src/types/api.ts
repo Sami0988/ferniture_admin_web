@@ -225,6 +225,8 @@ export interface ApiProject {
   totalPrice?: number | null;
   paidNowPrice?: number;
   remainingPrice?: number;
+  branchName?: string;
+  city?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -298,6 +300,8 @@ export interface CreateProjectRequest {
   assigneeIds?: string[];
   totalPrice?: number;
   paidNowPrice?: number;
+  branchName?: string;
+  city?: string;
 }
 
 export interface UpdateProjectRequest {
@@ -310,6 +314,8 @@ export interface UpdateProjectRequest {
   assigneeIds?: string[];
   totalPrice?: number;
   paidNowPrice?: number;
+  branchName?: string;
+  city?: string;
 }
 
 export interface UpdateProjectStatusRequest {

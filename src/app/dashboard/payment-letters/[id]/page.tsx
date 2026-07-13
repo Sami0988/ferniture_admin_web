@@ -10,6 +10,9 @@ import {
 } from '@/store/api/paymentLettersApi';
 import { useGetLetterTemplateByIdQuery } from '@/store/api/letterTemplatesApi';
 import { useGetCompanyInfoQuery } from '@/store/api/companySettingsApi';
+import { useGetProjectByIdQuery } from '@/store/api/projectsApi';
+import { buildTemplateHtml } from '@/app/dashboard/letter-templates/[id]/templateHtmlBuilder';
+import { TemplateStyleConfig, DEFAULT_STYLE_CONFIG } from '@/app/dashboard/letter-templates/[id]/types';
 import { formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -40,12 +43,17 @@ export default function PaymentLetterDetailPage() {
     skip: !letter?.templateId,
   });
   const { data: companyData } = useGetCompanyInfoQuery();
+  const { data: projectData } = useGetProjectByIdQuery(letter?.projectId || '', {
+    skip: !letter?.projectId,
+  });
   
   const template = templateData?.data;
   const company = companyData?.data;
+  const project = projectData?.data;
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [editForm, setEditForm] = useState({
     recipientCompanyName: '',
     recipientName: '',
@@ -109,66 +117,82 @@ export default function PaymentLetterDetailPage() {
     if (!letter) return null;
     
     const date = new Date(letter.createdAt).toLocaleDateString('en-GB');
-    const dueDate = letter.dueDate ? new Date(letter.dueDate).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric' }) : '';
     
-    // Extract header from template (everything before "Date:")
-    let headerHtml = '';
-    if (template?.htmlContent) {
-      const dateMarker = template.htmlContent.indexOf('Date:');
-      if (dateMarker !== -1) {
-        // Find the div before Date:
-        const beforeDate = template.htmlContent.lastIndexOf('<div', dateMarker);
-        if (beforeDate !== -1) {
-          headerHtml = template.htmlContent.substring(0, beforeDate);
-        }
-      }
-      // Replace company placeholders in header
-      headerHtml = headerHtml.replaceAll('{{companyName}}', company?.company_name || 'Kassahun Tsegaye Wood and Alu Works PLC');
-      headerHtml = headerHtml.replaceAll('{{companyLogo}}', company?.company_logo 
-        ? `<img src="${company.company_logo}" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
-        : '');
+    // Replace body content with project-aware values
+    let body = letter.body;
+    if (project) {
+      const branch = project.branchName || '';
+      const city = project.city || '';
+      const price = project.totalPrice ? project.totalPrice.toLocaleString() : '';
+      const projectTitle = project.title || '';
+      body = body.replace(/<branch>/gi, branch);
+      body = body.replace(/<city>/gi, city);
+      body = body.replace(/<location>/gi, city);
+      body = body.replace(/<price>/gi, price);
+      body = body.replace(/<project>/gi, projectTitle);
     }
-    
-    // Generate body content from API data
-    return `
-<!DOCTYPE html>
+
+    // Detect style config from stored template or use defaults
+    let config: TemplateStyleConfig = { ...DEFAULT_STYLE_CONFIG };
+    if (template?.htmlContent) {
+      const html = template.htmlContent;
+      const colorRegex = /(?:background(?:-color)?:\s*)(#[0-9a-fA-F]{3,8})/g;
+      const colors = [...html.matchAll(colorRegex)].map(m => m[1]);
+      if (colors.length >= 2) {
+        config.header.backgroundColor = colors[0];
+        config.header.accentColor = colors[1];
+      } else if (colors.length === 1) {
+        config.header.backgroundColor = colors[0];
+      }
+      config.headerStyle = html.includes('rotate(45deg)') ? 'modern' : 'classic';
+    }
+
+    const companyLogo = company?.company_logo
+      ? `<img src="${company.company_logo}" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
+      : '<div style="width:50px;height:50px;background:#f3f4f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:#9ca3af;">LOGO</div>';
+
+    let html = buildTemplateHtml(config);
+
+    const replaceData: Record<string, string> = {
+      companyLogo,
+      companyName: company?.company_name || 'Kassahun Tsegaye Wood and Alu Works PLC',
+      companyPhone: company?.company_phone || '',
+      companyEmail: company?.company_email || '',
+      signatoryName: company?.signatory_name || '',
+      date,
+      letterNumber: letter.referenceNumber || '',
+      recipientCompanyName: letter.recipientCompanyName || '',
+      recipientTitle: letter.recipientTitle || '',
+      recipientAddress: letter.recipientAddress || '',
+      subject: letter.subject || '',
+      body: body.replace(/\n/g, '<br>'),
+    };
+
+    Object.entries(replaceData).forEach(([key, value]) => {
+      html = html.replaceAll(`{{${key}}}`, value);
+    });
+
+    html = html.replace(/<branch>/gi, '___________________');
+    html = html.replace(/<city>/gi, '___________________');
+    html = html.replace(/<location>/gi, '___________________');
+    html = html.replace(/<price>/gi, '___________________');
+    html = html.replace(/<project>/gi, '___________________');
+
+    return `<!DOCTYPE html>
 <html>
 <head>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 40px; color: #333; }
-  </style>
+<meta charset="utf-8">
+<style>
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+  @page { margin: 0; size: A4; }
+  html, body { margin: 0; padding: 0; background: #e9e9ec; font-family: Arial, sans-serif; color: #333; }
+  .letter-capture { width: 794px; min-height: 1123px; background: #ffffff; margin: 0 auto; }
+  @media print { body { background: #fff; } .letter-capture { box-shadow: none; margin: 0; width: 100%; } }
+</style>
 </head>
 <body>
-  ${headerHtml}
-
-  <div style="text-align: right; margin: 20px 0; font-size: 14px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">
-    Date: ${date}
-  </div>
-
-  <div style="margin-bottom: 30px; line-height: 1.6;">
-    To<br>
-    ${letter.recipientCompanyName}<br>
-    ${letter.recipientTitle || ''}<br>
-    ${letter.recipientAddress || ''}
-  </div>
-
-  <div style="text-align: center; margin: 30px 0; font-size: 14px;">
-    Subject: <span style="text-decoration: underline;">${letter.subject}</span>
-  </div>
-
-  <div style="font-size: 15px; line-height: 1.6;">
-    ${letter.body.replace(/\n/g, '<br>')}
-  </div>
-
-  <div style="text-align: right; margin-top: 60px; line-height: 1.8;">
-    Thank you for your cooperation.<br><br>
-    Yours sincerely,<br>
-    <strong>${company?.signatory_name || ''}</strong>
-  </div>
-
-  <div style="border-top: 1px solid #ccc; margin-top: 40px; font-size: 11px; display: flex; justify-content: space-between;">
-    <span>Phone: ${company?.company_phone || ''}</span>
-    <span>Email: ${company?.company_email || ''}</span>
+  <div class="letter-capture">
+    ${html}
   </div>
 </body>
 </html>`;
@@ -183,30 +207,44 @@ export default function PaymentLetterDetailPage() {
       return;
     }
 
-    // Add print styles to hide browser headers
-    const printHtml = html.replace('</head>', `
-  <style>
-    @media print {
-      @page { margin: 0; }
-      body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    }
-  </style>
-</head>`);
-
+    setIsDownloading(true);
     try {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(printHtml);
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-        }, 500);
-        toast.success('Print dialog opened - select "Save as PDF" to download');
-      }
+      const html2pdf = (await import('html2pdf.js')).default;
+      const element = document.createElement('div');
+      element.innerHTML = html;
+      element.style.position = 'fixed';
+      element.style.left = '-9999px';
+      element.style.top = '0';
+      element.style.width = '794px';
+      document.body.appendChild(element);
+
+      const captureTarget = element.querySelector('.letter-capture') as HTMLElement || element;
+      
+      await html2pdf()
+        .set({
+          margin: 0,
+          filename: `payment-letter-${letter?.letterNumber || 'download'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true, 
+            letterRendering: true,
+            logging: false,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(captureTarget)
+        .save();
+      
+      document.body.removeChild(element);
+      toast.success('PDF downloaded');
     } catch (err) {
       console.error('PDF generation error:', err);
       toast.error('Failed to generate PDF');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -245,8 +283,8 @@ export default function PaymentLetterDetailPage() {
               <Edit className="h-4 w-4" /> Edit
             </Button>
           )}
-          <Button onClick={handleDownloadPdf}>
-            <Download className="h-4 w-4" /> Download PDF
+          <Button onClick={handleDownloadPdf} loading={isDownloading}>
+            <Download className="h-4 w-4" /> {isDownloading ? 'Generating...' : 'Download PDF'}
           </Button>
           {isDraft && (
             <Button onClick={handleSend} loading={isSending}>
@@ -262,8 +300,8 @@ export default function PaymentLetterDetailPage() {
       </div>
 
       {/* Letter Info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
           {/* Letter Content */}
           <Card>
             <div className="p-6">

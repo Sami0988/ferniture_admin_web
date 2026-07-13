@@ -48,4 +48,9 @@ export const PLACEHOLDER_HELPERS = [
   { placeholder: '{{recipientAddress}}', description: 'Recipient address' },
   { placeholder: '{{subject}}', description: 'Letter subject' },
   { placeholder: '{{body}}', description: 'Letter body content' },
+  { placeholder: '<branch>', description: 'Project branch name (auto-filled)' },
+  { placeholder: '<city>', description: 'Project city (auto-filled)' },
+  { placeholder: '<location>', description: 'Project location/city (auto-filled)' },
+  { placeholder: '<price>', description: 'Project total price (auto-filled)' },
+  { placeholder: '<project>', description: 'Project/work order name (auto-filled)' },
 ];
