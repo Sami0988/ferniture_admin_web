@@ -18,6 +18,14 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { WebsiteProduct } from '@/types/api';
 
+const divisions = [
+  { value: 'furniture', label: 'Furniture' },
+  { value: 'aluminum', label: 'Aluminum' },
+  { value: 'interior_design', label: 'Interior Design' },
+  { value: 'custom_orders', label: 'Custom Orders' },
+  { value: 'accessories', label: 'Accessories' },
+];
+
 const categories = [
   'Furniture',
   'Aluminum Products',
@@ -64,6 +72,7 @@ export default function ProductsPage() {
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPrice, setFormPrice] = useState('');
+  const [formDivision, setFormDivision] = useState('furniture');
   const [formCategory, setFormCategory] = useState('');
   const [formMaterialId, setFormMaterialId] = useState('');
   const [formIsFeatured, setFormIsFeatured] = useState(false);
@@ -81,6 +90,7 @@ export default function ProductsPage() {
     setFormName('');
     setFormDescription('');
     setFormPrice('');
+    setFormDivision('furniture');
     setFormCategory('');
     setFormMaterialId('');
     setFormIsFeatured(false);
@@ -101,6 +111,7 @@ export default function ProductsPage() {
     setFormName(product.name);
     setFormDescription(product.description);
     setFormPrice(String(product.price));
+    setFormDivision(product.division || 'furniture');
     setFormCategory(product.category);
     setFormMaterialId(product.materialId || '');
     setFormIsFeatured(product.isFeatured);
@@ -147,6 +158,7 @@ export default function ProductsPage() {
         name: formName,
         description: formDescription,
         price: parseFloat(formPrice) || 0,
+        division: formDivision,
         category: formCategory,
         materialId: formMaterialId || undefined,
         isFeatured: formIsFeatured,
@@ -421,6 +433,12 @@ export default function ProductsPage() {
               ]}
             />
           </div>
+          <Select
+            label="Division"
+            value={formDivision}
+            onChange={(e) => setFormDivision(e.target.value)}
+            options={divisions.map((d) => ({ value: d.value, label: d.label }))}
+          />
           <Select
             label="Material (Optional)"
             value={formMaterialId}
