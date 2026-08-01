@@ -259,7 +259,7 @@ export default function ProjectDetailPage() {
     return (
       <div className="text-center py-12">
         <p className="text-muted">Project not found</p>
-        <Button variant="outline" onClick={() => router.push('/dashboard/projects')} className="mt-4">Go Back</Button>
+        <Button variant="outline" onClick={() => router.push('/dashboard/workorders')} className="mt-4">Go Back</Button>
       </div>
     );
   }
@@ -268,7 +268,7 @@ export default function ProjectDetailPage() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/projects')}>
+        <Button variant="ghost" size="sm" onClick={() => router.push('/dashboard/workorders')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="flex-1">

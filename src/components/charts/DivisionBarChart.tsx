@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DivisionBarChartProps {
@@ -17,7 +18,7 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-export default function DivisionBarChart({ data }: DivisionBarChartProps) {
+function DivisionBarChartComponent({ data }: DivisionBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <BarChart data={data} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -33,3 +34,6 @@ export default function DivisionBarChart({ data }: DivisionBarChartProps) {
     </ResponsiveContainer>
   );
 }
+
+const DivisionBarChart = memo(DivisionBarChartComponent);
+export default DivisionBarChart;

@@ -1,9 +1,17 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface RateLimitInfo {
+  message: string;
+  retryAfter: number;
+  endpoint: string;
+}
+
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
+  mfaEnabled: boolean;
+  rateLimitError: RateLimitInfo | null;
   user: {
     id: string;
     name?: string;
@@ -15,11 +23,9 @@ interface AuthState {
   } | null;
 }
 
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-  return match ? decodeURIComponent(match[2]) : null;
-}
+// Cookies are set so the Next.js middleware can read them for route protection.
+// Tokens are NOT stored in localStorage/sessionStorage — only in Redux state + cookies.
+// TODO: Backend should eventually set HttpOnly cookies directly and accept them in JwtStrategy.
 
 function setCookie(name: string, value: string, days?: number) {
   if (typeof document === 'undefined') return;
@@ -32,62 +38,59 @@ function removeCookie(name: string) {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
 }
 
-function getStoredToken(key: 'accessToken' | 'refreshToken'): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(key) || sessionStorage.getItem(key);
-}
-
 const initialState: AuthState = {
-  accessToken: getStoredToken('accessToken'),
-  refreshToken: getStoredToken('refreshToken'),
-  isAuthenticated: typeof window !== 'undefined' ? !!(localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')) : false,
-  user: typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null') : null,
+  accessToken: null,
+  refreshToken: null,
+  isAuthenticated: false,
+  mfaEnabled: false,
+  rateLimitError: null,
+  user: null,
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setCredentials: (state, action: PayloadAction<{ user: AuthState['user']; tokens: { accessToken: string; refreshToken: string }; rememberMe?: boolean }>) => {
+    setCredentials: (state, action: PayloadAction<{ user: AuthState['user']; tokens: { accessToken: string; refreshToken: string }; mfaEnabled?: boolean }>) => {
       state.user = action.payload.user;
       state.accessToken = action.payload.tokens.accessToken;
       state.refreshToken = action.payload.tokens.refreshToken;
       state.isAuthenticated = true;
-      if (typeof window !== 'undefined') {
-        const storage = action.payload.rememberMe !== false ? localStorage : sessionStorage;
-        storage.setItem('accessToken', action.payload.tokens.accessToken);
-        storage.setItem('refreshToken', action.payload.tokens.refreshToken);
-        storage.setItem('user', JSON.stringify(action.payload.user));
-        setCookie('accessToken', action.payload.tokens.accessToken, action.payload.rememberMe !== false ? 7 : undefined);
-        setCookie('refreshToken', action.payload.tokens.refreshToken, action.payload.rememberMe !== false ? 7 : undefined);
+      if (action.payload.mfaEnabled !== undefined) {
+        state.mfaEnabled = action.payload.mfaEnabled;
+      }
+      // Set cookies for middleware — these are non-HttpOnly for now
+      // until backend sets them directly as HttpOnly
+      if (typeof document !== 'undefined') {
+        setCookie('accessToken', action.payload.tokens.accessToken, 7);
+        setCookie('refreshToken', action.payload.tokens.refreshToken, 7);
       }
     },
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
-      if (typeof window !== 'undefined') {
-        const storage = localStorage.getItem('accessToken') ? localStorage : sessionStorage;
-        storage.setItem('accessToken', action.payload.accessToken);
-        storage.setItem('refreshToken', action.payload.refreshToken);
-        setCookie('accessToken', action.payload.accessToken);
-        setCookie('refreshToken', action.payload.refreshToken);
+      if (typeof document !== 'undefined') {
+        setCookie('accessToken', action.payload.accessToken, 7);
+        setCookie('refreshToken', action.payload.refreshToken, 7);
       }
     },
     setUser: (state, action: PayloadAction<AuthState['user']>) => {
       state.user = action.payload;
+    },
+    setMfaEnabled: (state, action: PayloadAction<boolean>) => {
+      state.mfaEnabled = action.payload;
+    },
+    setRateLimitError: (state, action: PayloadAction<RateLimitInfo | null>) => {
+      state.rateLimitError = action.payload;
     },
     logout: (state) => {
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
       state.isAuthenticated = false;
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('accessToken');
-        sessionStorage.removeItem('refreshToken');
-        sessionStorage.removeItem('user');
+      state.mfaEnabled = false;
+      state.rateLimitError = null;
+      if (typeof document !== 'undefined') {
         removeCookie('accessToken');
         removeCookie('refreshToken');
       }
@@ -95,5 +98,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setTokens, setUser, logout } = authSlice.actions;
+export const { setCredentials, setTokens, setUser, setMfaEnabled, setRateLimitError, logout } = authSlice.actions;
 export default authSlice.reducer;

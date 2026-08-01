@@ -11,6 +11,7 @@ import type {
   ProjectPaymentSummary,
   RecordProjectPaymentRequest,
   RecordPaymentResponse,
+  ProjectAttachment,
   ApiResponse,
   PaginatedResponse,
 } from '@/types/api';
@@ -98,6 +99,34 @@ export const projectsApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }, 'Project'],
     }),
+
+    // Attachments
+    getAttachments: builder.query<ApiResponse<ProjectAttachment[]>, string>({
+      query: (projectId) => `/projects/${projectId}/attachments`,
+      providesTags: (_result, _error, projectId) => [{ type: 'Project', id: projectId }],
+    }),
+
+    uploadAttachment: builder.mutation<ApiResponse<ProjectAttachment>, { projectId: string; file: File; type?: string }>({
+      query: ({ projectId, file, type }) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        if (type) formData.append('type', type);
+        return {
+          url: `/projects/${projectId}/attachments`,
+          method: 'POST',
+          body: formData,
+        };
+      },
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
+    }),
+
+    deleteAttachment: builder.mutation<void, { projectId: string; attachmentId: string }>({
+      query: ({ projectId, attachmentId }) => ({
+        url: `/projects/${projectId}/attachments/${attachmentId}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result, _error, { projectId }) => [{ type: 'Project', id: projectId }],
+    }),
   }),
 });
 
@@ -113,4 +142,7 @@ export const {
   useRemoveAssigneeMutation,
   useGetProjectPaymentsQuery,
   useRecordPaymentMutation,
+  useGetAttachmentsQuery,
+  useUploadAttachmentMutation,
+  useDeleteAttachmentMutation,
 } = projectsApi;

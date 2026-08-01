@@ -36,9 +36,48 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
-export interface LoginResponse {
+export interface LoginResponseSuccess {
   user: ApiUser;
   tokens: AuthTokens;
+}
+
+export interface MfaRequiredResponse {
+  mfaRequired: true;
+  mfaPendingToken: string;
+}
+
+export type LoginResponse = LoginResponseSuccess | MfaRequiredResponse;
+
+export interface MfaVerifyRequest {
+  mfaPendingToken: string;
+  token: string;
+}
+
+export interface MfaVerifyResponse {
+  user: ApiUser;
+  tokens: AuthTokens;
+}
+
+export interface MfaSetupResponse {
+  qrCodeDataUrl: string;
+  secret: string;
+}
+
+export interface MfaConfirmRequest {
+  token: string;
+}
+
+export interface MfaDisableRequest {
+  password: string;
+  token: string;
+}
+
+export interface MfaRegenerateBackupCodesRequest {
+  token: string;
+}
+
+export interface MfaRegenerateBackupCodesResponse {
+  backupCodes: string[];
 }
 
 export interface RefreshRequest {
@@ -47,6 +86,19 @@ export interface RefreshRequest {
 
 export interface RefreshResponse {
   tokens: AuthTokens;
+}
+
+export interface RateLimitError {
+  statusCode: 429;
+  message: string;
+  retryAfter?: number;
+}
+
+export interface AccountLockedError {
+  statusCode: 401;
+  errorCode: 'ACCOUNT_LOCKED';
+  message: string;
+  lockedUntil?: string;
 }
 
 // ── Users ───────────────────────────────────────────────────
@@ -227,6 +279,7 @@ export interface ApiProject {
   remainingPrice?: number;
   branchName?: string;
   city?: string;
+  coverImage?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -302,6 +355,7 @@ export interface CreateProjectRequest {
   paidNowPrice?: number;
   branchName?: string;
   city?: string;
+  coverImage?: File;
 }
 
 export interface UpdateProjectRequest {
@@ -330,6 +384,34 @@ export interface ProjectFilters {
   search?: string;
   page?: number;
   limit?: number;
+}
+
+// ── Project Attachments ──────────────────────────────────────
+export interface ProjectAttachment {
+  id: string;
+  projectId: string;
+  filename: string;
+  url: string;
+  mimetype: string;
+  size: number;
+  type: AttachmentType;
+  uploadedBy: string;
+  createdAt: string;
+}
+
+export interface UploadAttachmentRequest {
+  file: File;
+  type?: AttachmentType;
+}
+
+export interface ProjectPaymentRecord {
+  id: string;
+  projectId: string;
+  amount: number;
+  method: ProjectPaymentMethod;
+  note?: string;
+  recordedBy: string;
+  createdAt: string;
 }
 
 // ── Materials ───────────────────────────────────────────────
@@ -874,6 +956,52 @@ export interface AuditLog {
 export interface AuditLogFilters {
   entityType?: string;
   userId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// ── Gallery Projects ─────────────────────────────────────────
+export type GalleryDivision = 'furniture' | 'aluminum' | 'interior_design' | 'custom_orders' | 'accessories';
+
+export interface GalleryProject {
+  id: string;
+  projectId?: string;
+  projectTitle?: string;
+  imageUrl: string;
+  title?: string;
+  roomType?: string;
+  aspect?: string;
+  division: GalleryDivision;
+  isFeatured: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateGalleryProjectRequest {
+  division: GalleryDivision;
+  imageUrl?: string;
+  title?: string;
+  roomType?: string;
+  aspect?: string;
+  projectId?: string;
+  image?: File;
+}
+
+export interface UpdateGalleryProjectRequest {
+  division?: GalleryDivision;
+  imageUrl?: string;
+  title?: string;
+  roomType?: string;
+  aspect?: string;
+  projectId?: string;
+  image?: File;
+}
+
+export interface GalleryProjectFilters {
+  projectId?: string;
+  division?: string;
+  search?: string;
   page?: number;
   limit?: number;
 }

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useUI } from '@/hooks/useStore';
+import { useUI, useAuth } from '@/hooks/useStore';
+import { usePermission } from '@/hooks/usePermission';
 import { useGetCompanyInfoQuery } from '@/store/api/companySettingsApi';
 import {
   LayoutDashboard,
@@ -21,20 +22,23 @@ import {
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/gallery-project', label: 'Gallery Projects', icon: FolderOpen },
+  { href: '/dashboard/workorders', label: 'Work Orders', icon: Hammer },
   { href: '/dashboard/customers', label: 'Customers', icon: Users },
-  { href: '/dashboard/projects', label: 'Work Orders', icon: FolderOpen },
   { href: '/dashboard/products', label: 'Products', icon: Package },
   { href: '/dashboard/materials', label: 'Materials', icon: Palette },
   { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
   { href: '/dashboard/payment-letters', label: 'Payment Letters', icon: Mail },
   { href: '/dashboard/letter-templates', label: 'Letter Templates', icon: FileCode },
-  { href: '/dashboard/employees', label: 'Employees', icon: Hammer },
+  { href: '/dashboard/employees', label: 'Employees', icon: Users },
   { href: '/dashboard/notifications', label: 'Notifications', icon: Bell },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { sidebarCollapsed } = useUI();
+  const { mfaEnabled } = useAuth();
+  const { canViewFinancials } = usePermission();
   const { data: companyData } = useGetCompanyInfoQuery();
   const company = companyData?.data;
 
@@ -42,6 +46,15 @@ export default function Sidebar() {
   const tagline = company?.company_tagline || 'Wood & Aluminum';
   const logo = company?.company_logo;
   const initials = companyName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+
+  // Filter nav items based on permissions
+  const filteredNavItems = navItems.filter((item) => {
+    // Financial items require manager+ role
+    if (['invoices', 'payment-letters'].includes(item.href.split('/').pop() || '')) {
+      return canViewFinancials;
+    }
+    return true;
+  });
 
   return (
     <aside
@@ -72,8 +85,8 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 px-2 py-3">
-        {navItems.map((item) => {
+      <nav className="flex-1 overflow-y-auto space-y-1 px-2 py-3 min-h-0">
+        {filteredNavItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
           return (
             <Link
@@ -94,6 +107,18 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      {/* MFA Warning */}
+      {!mfaEnabled && !sidebarCollapsed && (
+        <div className="mx-2 mb-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
+          <p className="text-[11px] text-amber-700">
+            <Link href="/dashboard/settings?mfa=setup" className="font-medium underline">
+              Enable 2FA
+            </Link>{' '}
+            to secure your account
+          </p>
+        </div>
+      )}
 
       {/* Settings */}
       <div className="border-t border-border px-2 py-3">

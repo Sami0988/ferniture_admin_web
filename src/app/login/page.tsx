@@ -1,60 +1,138 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useStore';
-import { useLoginMutation } from '@/store/api/authApi';
+import { useLoginMutation, useVerifyMfaMutation } from '@/store/api/authApi';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Eye, EyeOff, Hammer, Mail, Lock } from 'lucide-react';
+import OtpInput from '@/components/ui/OtpInput';
+import { Eye, EyeOff, Hammer, Mail, Lock, Shield, ArrowLeft, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 
+type LoginStep = 'credentials' | 'mfa';
+
 function LoginForm() {
-  const [email, setEmail] = useState('admin@kassahun.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [step, setStep] = useState<LoginStep>('credentials');
+  const [mfaPendingToken, setMfaPendingToken] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaCountdown, setMfaCountdown] = useState(300);
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/dashboard';
   const { setCredentials } = useAuth();
   const [loginMutation, { isLoading }] = useLoginMutation();
+  const [verifyMfa, { isLoading: isVerifyingMfa }] = useVerifyMfaMutation();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+
+  // MFA countdown timer
+  useEffect(() => {
+    if (step !== 'mfa' || mfaCountdown <= 0) return;
+    const timer = setInterval(() => {
+      setMfaCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [step, mfaCountdown]);
+
+  const formatCountdown = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const fetchAndStoreUser = useCallback(async (accessToken: string) => {
+    const userRes = await fetch(`${BASE_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    const userData = await userRes.json();
+    const user = userData.data;
+
+    setCredentials({
+      user: {
+        id: user.id,
+        name: user.fullName || user.name || email,
+        email: user.email || '',
+        phone: user.phone || '',
+        role: user.role || 'viewer',
+        avatar: user.avatarUrl || user.avatar || null,
+      },
+      tokens: { accessToken, refreshToken: '' },
+      rememberMe,
+    });
+
+    // Check if MFA setup is required
+    if (user.mfaEnabled === false) {
+      await router.push('/dashboard/settings?mfa=setup');
+    } else {
+      await router.push(redirectTo);
+    }
+  }, [BASE_URL, email, rememberMe, redirectTo, router, setCredentials]);
+
+  const handleCredentialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     try {
       const result = await loginMutation({ phone: email, password }).unwrap();
-      const { accessToken, refreshToken } = result.data as unknown as { accessToken: string; refreshToken: string };
+      const data = result.data as any;
 
-      const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
-      const userRes = await fetch(`${BASE_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      const userData = await userRes.json();
+      // Check if MFA is required
+      if (data?.mfaRequired) {
+        setMfaPendingToken(data.mfaPendingToken);
+        setStep('mfa');
+        setMfaCountdown(300);
+        return;
+      }
 
-      const user = userData.data;
-      setCredentials({
-        user: {
-          id: user.id,
-          name: user.fullName || user.name || email,
-          email: user.email || '',
-          phone: user.phone || '',
-          role: user.role || 'user',
-          avatar: user.avatarUrl || user.avatar || null,
-        },
-        tokens: { accessToken, refreshToken },
-        rememberMe,
-      });
-
-      await router.push(redirectTo);
+      // Direct login (no MFA)
+      const { accessToken } = data.tokens || data;
+      await fetchAndStoreUser(accessToken);
     } catch (err: unknown) {
-      console.error('Login error:', err);
-      const error = err as { data?: { message?: string } };
-      setError(error?.data?.message || 'Invalid phone or password');
+      const error = err as { data?: { message?: string; errorCode?: string; lockedUntil?: string } };
+      if (error?.data?.errorCode === 'ACCOUNT_LOCKED') {
+        setError(`Account is temporarily locked. ${error.data.message || 'Try again later.'}`);
+      } else {
+        setError(error?.data?.message || 'Invalid phone or password');
+      }
     }
+  };
+
+  const handleMfaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMfaError('');
+
+    if (mfaCode.length !== 6) {
+      setMfaError('Please enter a 6-digit code');
+      return;
+    }
+
+    try {
+      const result = await verifyMfa({ mfaPendingToken, token: mfaCode }).unwrap();
+      const { accessToken } = result.data.tokens;
+      await fetchAndStoreUser(accessToken);
+    } catch (err: unknown) {
+      const error = err as { data?: { message?: string } };
+      setMfaError(error?.data?.message || 'Invalid code. Please try again.');
+    }
+  };
+
+  const handleResend = () => {
+    setStep('credentials');
+    setMfaPendingToken('');
+    setMfaCode('');
+    setMfaError('');
+  };
+
+  const formatCountdownDisplay = () => {
+    if (mfaCountdown <= 0) return null;
+    return `Code expires in ${formatCountdown(mfaCountdown)}`;
   };
 
   return (
@@ -105,68 +183,145 @@ function LoginForm() {
             </div>
           </div>
 
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
-            <p className="text-sm text-muted mt-1">Sign in to your admin dashboard</p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
-                {error}
+          {/* Credentials Step */}
+          {step === 'credentials' && (
+            <>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Welcome back</h2>
+                <p className="text-sm text-muted mt-1">Sign in to your admin dashboard</p>
               </div>
-            )}
 
-            <Input
-              label="Email or Phone"
-              type="text"
-              icon={<Mail className="h-4 w-4" />}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email or phone number"
-              required
-            />
+              <form onSubmit={handleCredentialSubmit} className="space-y-4">
+                {error && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                    {error}
+                  </div>
+                )}
 
-            <div className="space-y-1.5">
-              <div className="relative">
                 <Input
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  icon={<Lock className="h-4 w-4" />}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
+                  label="Email or Phone"
+                  type="text"
+                  icon={<Mail className="h-4 w-4" />}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email or phone number"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[38px] text-muted hover:text-foreground transition-colors"
+
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Input
+                      label="Password"
+                      type={showPassword ? 'text' : 'password'}
+                      icon={<Lock className="h-4 w-4" />}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-[38px] text-muted hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-border"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      Remember me
+                    </label>
+                    <Link href="/login/forgot-password" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">
+                      Forgot password?
+                    </Link>
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full" size="lg" loading={isLoading}>
+                  Sign In
+                </Button>
+              </form>
+            </>
+          )}
+
+          {/* MFA TOTP Step */}
+          {step === 'mfa' && (
+            <>
+              <div className="text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-gold/10 mb-4">
+                  <Shield className="h-7 w-7 text-brand-gold" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground">Two-Factor Authentication</h2>
+                <p className="text-sm text-muted mt-1">
+                  Enter the 6-digit code from your authenticator app
+                </p>
+              </div>
+
+              <form onSubmit={handleMfaSubmit} className="space-y-4">
+                {mfaError && (
+                  <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-600">
+                    {mfaError}
+                  </div>
+                )}
+
+                <OtpInput
+                  length={6}
+                  value={mfaCode}
+                  onChange={setMfaCode}
+                  disabled={isVerifyingMfa || mfaCountdown <= 0}
+                  autoFocus
+                />
+
+                {formatCountdownDisplay() && (
+                  <p className="text-xs text-center text-muted">
+                    {formatCountdownDisplay()}
+                  </p>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full"
+                  size="lg"
+                  loading={isVerifyingMfa}
+                  disabled={mfaCode.length !== 6 || mfaCountdown <= 0}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="rounded border-border"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                  />
-                  Remember me
-                </label>
-                <Link href="/login/forgot-password" className="text-xs text-brand-gold hover:text-brand-gold-light font-medium">
-                  Forgot password?
-                </Link>
-              </div>
-            </div>
+                  Verify Code
+                </Button>
 
-            <Button type="submit" className="w-full" size="lg" loading={isLoading}>
-              Sign In
-            </Button>
-          </form>
-
+                <div className="flex flex-col gap-2">
+                  {mfaCountdown <= 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      className="flex items-center justify-center gap-2 text-sm text-brand-gold hover:text-brand-gold-light font-medium"
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Try again with credentials
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('credentials');
+                      setMfaPendingToken('');
+                      setMfaCode('');
+                      setMfaError('');
+                    }}
+                    className="flex items-center justify-center gap-2 text-sm text-muted hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to login
+                  </button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </div>
     </div>

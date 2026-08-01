@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from '@/store';
 import { toggleSidebar, toggleDarkMode, setActiveView } from '@/store/uiSlice';
-import { logout as authLogout, setCredentials, setUser } from '@/store/authSlice';
+import { logout as authLogout, setCredentials, setUser, setMfaEnabled } from '@/store/authSlice';
 
 // UI hooks
 export const useUI = () => {
@@ -26,15 +26,23 @@ export const useAuth = () => {
   const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
-  const accessToken = useAppSelector((s) => s.auth.accessToken);
+  const mfaEnabled = useAppSelector((s) => s.auth.mfaEnabled);
+  const rateLimitError = useAppSelector((s) => s.auth.rateLimitError);
 
   return {
     user,
     isAuthenticated,
-    accessToken,
-    setCredentials: (payload: { user: typeof user; tokens: { accessToken: string; refreshToken: string }; rememberMe?: boolean }) =>
+    mfaEnabled,
+    rateLimitError,
+    hasRole: (roles: string | string[]) => {
+      if (!user) return false;
+      const roleArray = Array.isArray(roles) ? roles : [roles];
+      return roleArray.includes(user.role);
+    },
+    setCredentials: (payload: { user: typeof user; tokens: { accessToken: string; refreshToken: string }; rememberMe?: boolean; mfaEnabled?: boolean }) =>
       dispatch(setCredentials(payload)),
     setUser: (userData: typeof user) => dispatch(setUser(userData)),
+    setMfaEnabled: (enabled: boolean) => dispatch(setMfaEnabled(enabled)),
     logout: () => dispatch(authLogout()),
   };
 };

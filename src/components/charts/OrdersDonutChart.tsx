@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 
 interface OrdersDonutChartProps {
@@ -21,7 +22,7 @@ const CustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: an
   );
 };
 
-export default function OrdersDonutChart({ data }: OrdersDonutChartProps) {
+function OrdersDonutChartComponent({ data }: OrdersDonutChartProps) {
   return (
     <ResponsiveContainer width="100%" height={250}>
       <PieChart>
@@ -51,3 +52,6 @@ export default function OrdersDonutChart({ data }: OrdersDonutChartProps) {
     </ResponsiveContainer>
   );
 }
+
+const OrdersDonutChart = memo(OrdersDonutChartComponent);
+export default OrdersDonutChart;

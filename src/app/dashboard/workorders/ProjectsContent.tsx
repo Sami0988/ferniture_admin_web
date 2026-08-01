@@ -162,7 +162,7 @@ export default function ProjectsContent() {
         branchName: formBranchName || undefined,
         city: formCity || undefined,
       }).unwrap();
-      toast.success('Project created successfully');
+      toast.success('Work order created successfully');
       setCreateModalOpen(false);
       setFormTitle('');
       setFormDescription('');
@@ -181,7 +181,7 @@ export default function ProjectsContent() {
       setNewCustomerAddress('');
       setNewCustomerTin('');
     } catch (err: any) {
-      const message = err?.data?.message || err?.message || 'Failed to create project';
+      const message = err?.data?.message || err?.message || 'Failed to create work order';
       toast.error(message);
     }
   };
@@ -189,7 +189,7 @@ export default function ProjectsContent() {
   const handleStatusChange = async (projectId: string, newStatus: ProjectStatus) => {
     try {
       await updateProjectStatus({ id: projectId, data: { status: newStatus } }).unwrap();
-      toast.success(`Project status updated to ${newStatus.replace('_', ' ')}`);
+      toast.success(`Work order status updated to ${newStatus.replace('_', ' ')}`);
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to update status';
       toast.error(message);
@@ -201,10 +201,10 @@ export default function ProjectsContent() {
     setDeleteLoading(true);
     try {
       await deleteProject(deletingProject.id).unwrap();
-      toast.success('Project deleted successfully');
+      toast.success('Work order deleted successfully');
       setDeletingProject(null);
     } catch (err: any) {
-      const message = err?.data?.message || err?.message || 'Failed to delete project';
+      const message = err?.data?.message || err?.message || 'Failed to delete work order';
       toast.error(message);
     } finally {
       setDeleteLoading(false);
@@ -215,8 +215,8 @@ export default function ProjectsContent() {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-          <p className="text-sm text-muted">{pagination?.total ?? projects.length} projects</p>
+          <h1 className="text-2xl font-bold text-foreground">Work Orders</h1>
+          <p className="text-sm text-muted">{pagination?.total ?? projects.length} work orders</p>
         </div>
         <div className="flex items-center gap-3">
           <Select
@@ -231,7 +231,7 @@ export default function ProjectsContent() {
           />
           <Button onClick={() => setCreateModalOpen(true)}>
             <Plus className="h-4 w-4" />
-            New Project
+            New Work Order
           </Button>
         </div>
       </div>
@@ -239,7 +239,7 @@ export default function ProjectsContent() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="max-w-sm flex-1">
-          <SearchInput value={search} onChange={setSearch} placeholder="Search projects..." />
+          <SearchInput value={search} onChange={setSearch} placeholder="Search work orders..." />
         </div>
         <Select
           value={statusFilter}
@@ -304,7 +304,7 @@ export default function ProjectsContent() {
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                          onClick={() => router.push(`/dashboard/workorders/${project.id}`)}
                         className="rounded-lg border border-border bg-surface p-3 cursor-pointer hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
@@ -345,7 +345,7 @@ export default function ProjectsContent() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Project</th>
+                  <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Work Order</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Division</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Status</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Priority</th>
@@ -385,7 +385,7 @@ export default function ProjectsContent() {
                     <td className="py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
-                          onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                        onClick={() => router.push(`/dashboard/workorders/${project.id}`)}
                           className="rounded-lg p-1.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
                         >
                           <Eye className="h-4 w-4" />
@@ -403,7 +403,7 @@ export default function ProjectsContent() {
                 {projects.length === 0 && (
                   <tr>
                     <td colSpan={7} className="py-12 text-center text-sm text-muted">
-                      {isLoading ? 'Loading projects...' : 'No projects found'}
+                      {isLoading ? 'Loading work orders...' : 'No work orders found'}
                     </td>
                   </tr>
                 )}
@@ -467,10 +467,10 @@ export default function ProjectsContent() {
       )}
 
       {/* Create Modal */}
-      <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title="New Project" size="lg">
+      <Modal open={createModalOpen} onClose={() => setCreateModalOpen(false)} title="New Work Order" size="lg">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-foreground">Project Title *</label>
+            <label className="block text-sm font-medium text-foreground">Work Order Title *</label>
             <input
               className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
               value={formTitle}
@@ -484,7 +484,7 @@ export default function ProjectsContent() {
               className="flex min-h-[80px] w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
               value={formDescription}
               onChange={(e) => setFormDescription(e.target.value)}
-              placeholder="Describe the project scope..."
+              placeholder="Describe the work order scope..."
             />
           </div>
           <div className="space-y-1.5">
@@ -680,7 +680,7 @@ export default function ProjectsContent() {
           </div>
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setCreateModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateProject} loading={isCreating || isCreatingCustomer}>Create Project</Button>
+            <Button onClick={handleCreateProject} loading={isCreating || isCreatingCustomer}>Create Work Order</Button>
           </div>
         </div>
       </Modal>
@@ -690,7 +690,7 @@ export default function ProjectsContent() {
         open={!!deletingProject}
         onClose={() => setDeletingProject(null)}
         onConfirm={handleDelete}
-        title="Delete Project"
+        title="Delete Work Order"
         message={`Are you sure you want to delete "${deletingProject?.title}"? This action cannot be undone.`}
         confirmLabel="Delete"
         loading={deleteLoading}

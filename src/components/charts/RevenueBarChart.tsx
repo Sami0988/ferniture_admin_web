@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { MonthlyRevenue } from '@/lib/types';
 import { formatCurrency } from '@/lib/utils';
@@ -24,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function RevenueBarChart({ data }: RevenueBarChartProps) {
+function RevenueBarChartComponent({ data }: RevenueBarChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
@@ -40,3 +41,6 @@ export default function RevenueBarChart({ data }: RevenueBarChartProps) {
     </ResponsiveContainer>
   );
 }
+
+const RevenueBarChart = memo(RevenueBarChartComponent);
+export default RevenueBarChart;

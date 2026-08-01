@@ -1,5 +1,16 @@
 import { baseApi } from '../baseApi';
-import type { LoginRequest, LoginResponse, ApiResponse } from '@/types/api';
+import type {
+  ApiResponse,
+  LoginRequest,
+  LoginResponse,
+  MfaVerifyRequest,
+  MfaVerifyResponse,
+  MfaSetupResponse,
+  MfaConfirmRequest,
+  MfaDisableRequest,
+  MfaRegenerateBackupCodesRequest,
+  MfaRegenerateBackupCodesResponse,
+} from '@/types/api';
 
 export const authApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
@@ -8,6 +19,45 @@ export const authApi = baseApi.injectEndpoints({
         url: '/auth/login',
         method: 'POST',
         body: credentials,
+      }),
+    }),
+
+    verifyMfa: builder.mutation<ApiResponse<MfaVerifyResponse>, MfaVerifyRequest>({
+      query: (body) => ({
+        url: '/auth/mfa/verify',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    setupMfa: builder.mutation<ApiResponse<MfaSetupResponse>, void>({
+      query: () => ({
+        url: '/auth/mfa/setup',
+        method: 'POST',
+      }),
+    }),
+
+    confirmMfa: builder.mutation<ApiResponse<{ backupCodes: string[] }>, MfaConfirmRequest>({
+      query: (body) => ({
+        url: '/auth/mfa/confirm',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    disableMfa: builder.mutation<ApiResponse<void>, MfaDisableRequest>({
+      query: (body) => ({
+        url: '/auth/mfa/disable',
+        method: 'POST',
+        body,
+      }),
+    }),
+
+    regenerateBackupCodes: builder.mutation<ApiResponse<MfaRegenerateBackupCodesResponse>, MfaRegenerateBackupCodesRequest>({
+      query: (body) => ({
+        url: '/auth/mfa/regenerate-backup-codes',
+        method: 'POST',
+        body,
       }),
     }),
 
@@ -28,4 +78,13 @@ export const authApi = baseApi.injectEndpoints({
   }),
 });
 
-export const { useLoginMutation, useRefreshTokenMutation, useLogoutMutation } = authApi;
+export const {
+  useLoginMutation,
+  useVerifyMfaMutation,
+  useSetupMfaMutation,
+  useConfirmMfaMutation,
+  useDisableMfaMutation,
+  useRegenerateBackupCodesMutation,
+  useRefreshTokenMutation,
+  useLogoutMutation,
+} = authApi;
