@@ -10,6 +10,7 @@ import type {
   MfaDisableRequest,
   MfaRegenerateBackupCodesRequest,
   MfaRegenerateBackupCodesResponse,
+  ChangePasswordRequest,
 } from '@/types/api';
 
 export const authApi = baseApi.injectEndpoints({
@@ -69,6 +70,14 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
+    changePassword: builder.mutation<ApiResponse<void>, ChangePasswordRequest>({
+      query: (body) => ({
+        url: '/auth/change-password',
+        method: 'POST',
+        body,
+      }),
+    }),
+
     logout: builder.mutation<void, void>({
       query: () => ({
         url: '/auth/logout',
@@ -86,5 +95,6 @@ export const {
   useDisableMfaMutation,
   useRegenerateBackupCodesMutation,
   useRefreshTokenMutation,
+  useChangePasswordMutation,
   useLogoutMutation,
 } = authApi;

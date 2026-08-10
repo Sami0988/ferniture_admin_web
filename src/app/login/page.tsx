@@ -47,7 +47,7 @@ function LoginForm() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const fetchAndStoreUser = useCallback(async (accessToken: string) => {
+  const fetchAndStoreUser = useCallback(async (accessToken: string, refreshToken?: string) => {
     const userRes = await fetch(`${BASE_URL}/users/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -63,8 +63,9 @@ function LoginForm() {
         role: user.role || 'viewer',
         avatar: user.avatarUrl || user.avatar || null,
       },
-      tokens: { accessToken, refreshToken: '' },
+      tokens: { accessToken, refreshToken: refreshToken || '' },
       rememberMe,
+      mfaEnabled: user.mfaEnabled,
     });
 
     // Check if MFA setup is required
@@ -115,8 +116,8 @@ function LoginForm() {
 
     try {
       const result = await verifyMfa({ mfaPendingToken, token: mfaCode }).unwrap();
-      const { accessToken } = result.data.tokens;
-      await fetchAndStoreUser(accessToken);
+      const { accessToken, refreshToken } = result.data;
+      await fetchAndStoreUser(accessToken, refreshToken);
     } catch (err: unknown) {
       const error = err as { data?: { message?: string } };
       setMfaError(error?.data?.message || 'Invalid code. Please try again.');

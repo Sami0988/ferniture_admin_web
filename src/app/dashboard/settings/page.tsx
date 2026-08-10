@@ -10,6 +10,7 @@ import {
   useConfirmMfaMutation,
   useDisableMfaMutation,
   useRegenerateBackupCodesMutation,
+  useChangePasswordMutation,
 } from '@/store/api/authApi';
 import { useAuth } from '@/hooks/useStore';
 import Button from '@/components/ui/Button';
@@ -38,6 +39,7 @@ export default function SettingsPage() {
   const [confirmMfa, { isLoading: isConfirming }] = useConfirmMfaMutation();
   const [disableMfa, { isLoading: isDisabling }] = useDisableMfaMutation();
   const [regenerateBackupCodes, { isLoading: isRegenerating }] = useRegenerateBackupCodesMutation();
+  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
 
   const company = companyData?.data;
   const user = userData?.data;
@@ -50,6 +52,13 @@ export default function SettingsPage() {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [copiedAll, setCopiedAll] = useState(false);
 
+  // Sync mfaStep when mfaEnabled changes (e.g. after login sets it)
+  useEffect(() => {
+    if (mfaEnabled && mfaStep !== 'enabled' && mfaStep !== 'qr' && mfaStep !== 'confirm' && mfaStep !== 'backup-codes') {
+      setMfaStep('enabled');
+    }
+  }, [mfaEnabled]);
+
   // Disable MFA state
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
@@ -59,6 +68,11 @@ export default function SettingsPage() {
   const [showRegenModal, setShowRegenModal] = useState(false);
   const [regenCode, setRegenCode] = useState('');
   const [newBackupCodes, setNewBackupCodes] = useState<string[]>([]);
+
+  // Change password state
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const [companyForm, setCompanyForm] = useState({
     name: '',
@@ -140,7 +154,13 @@ export default function SettingsPage() {
       setMfaStep('qr');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to set up MFA';
-      toast.error(message);
+      if (message.toLowerCase().includes('already enabled')) {
+        setMfaStep('enabled');
+        setMfaEnabled(true);
+        toast.success('MFA is already enabled');
+      } else {
+        toast.error(message);
+      }
     }
   };
 
@@ -206,6 +226,23 @@ export default function SettingsPage() {
       toast.success('New backup codes generated');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to regenerate codes';
+      toast.error(message);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+    try {
+      await changePassword({ newPassword, confirmPassword: newPassword }).unwrap();
+      setShowChangePasswordModal(false);
+      setNewPassword('');
+      setConfirmNewPassword('');
+      toast.success('Password changed successfully');
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Failed to change password';
       toast.error(message);
     }
   };
@@ -611,7 +648,7 @@ export default function SettingsPage() {
           <Shield className="h-5 w-5 text-muted" />
           <h2 className="text-sm font-semibold text-foreground">Security</h2>
         </div>
-        <Button variant="secondary">Change Password</Button>
+        <Button variant="secondary" onClick={() => setShowChangePasswordModal(true)}>Change Password</Button>
       </Card>
 
       {/* Disable MFA Modal */}
@@ -687,6 +724,47 @@ export default function SettingsPage() {
               disabled={regenCode.length !== 6}
             >
               Regenerate Codes
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Change Password Modal */}
+      <Modal open={showChangePasswordModal} onClose={() => setShowChangePasswordModal(false)} title="Change Password">
+        <div className="space-y-4">
+          <Input
+            label="New Password"
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Enter new password"
+            autoComplete="new-password"
+          />
+          <Input
+            label="Confirm New Password"
+            type="password"
+            value={confirmNewPassword}
+            onChange={(e) => setConfirmNewPassword(e.target.value)}
+            placeholder="Confirm new password"
+            autoComplete="off"
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              onClick={() => {
+                setShowChangePasswordModal(false);
+                setNewPassword('');
+                setConfirmNewPassword('');
+              }}
+              variant="secondary"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              loading={isChangingPassword}
+              disabled={newPassword.length < 1 || newPassword !== confirmNewPassword}
+            >
+              Change Password
             </Button>
           </div>
         </div>

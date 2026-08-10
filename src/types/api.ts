@@ -54,8 +54,8 @@ export interface MfaVerifyRequest {
 }
 
 export interface MfaVerifyResponse {
-  user: ApiUser;
-  tokens: AuthTokens;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface MfaSetupResponse {
@@ -70,6 +70,11 @@ export interface MfaConfirmRequest {
 export interface MfaDisableRequest {
   password: string;
   token: string;
+}
+
+export interface ChangePasswordRequest {
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface MfaRegenerateBackupCodesRequest {
@@ -355,7 +360,6 @@ export interface CreateProjectRequest {
   paidNowPrice?: number;
   branchName?: string;
   city?: string;
-  coverImage?: File;
 }
 
 export interface UpdateProjectRequest {
