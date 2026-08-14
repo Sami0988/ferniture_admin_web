@@ -27,7 +27,8 @@ export interface PaginationParams {
 
 // ── Auth ────────────────────────────────────────────────────
 export interface LoginRequest {
-  phone: string;
+  phone?: string;
+  email?: string;
   password: string;
 }
 
@@ -90,7 +91,8 @@ export interface RefreshRequest {
 }
 
 export interface RefreshResponse {
-  tokens: AuthTokens;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export interface RateLimitError {

@@ -11,7 +11,7 @@ import NotificationPanel from '@/components/notifications/NotificationPanel';
 
 export default function TopBar() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshToken } = useAuth();
   const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode } = useUI();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -38,10 +38,12 @@ export default function TopBar() {
   }, [showNotifications, showProfile]);
 
   const handleLogout = async () => {
-    try {
-      await logoutApi().unwrap();
-    } catch {
-      // Ignore errors — clear local state anyway
+    if (refreshToken) {
+      try {
+        await logoutApi({ refreshToken }).unwrap();
+      } catch {
+        // Ignore errors — clear local state anyway
+      }
     }
     logout();
     router.push('/login');

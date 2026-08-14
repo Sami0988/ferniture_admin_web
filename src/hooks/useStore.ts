@@ -28,12 +28,14 @@ export const useAuth = () => {
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const mfaEnabled = useAppSelector((s) => s.auth.mfaEnabled);
   const rateLimitError = useAppSelector((s) => s.auth.rateLimitError);
+  const refreshToken = useAppSelector((s) => s.auth.refreshToken);
 
   return {
     user,
     isAuthenticated,
     mfaEnabled,
     rateLimitError,
+    refreshToken,
     hasRole: (roles: string | string[]) => {
       if (!user) return false;
       const roleArray = Array.isArray(roles) ? roles : [roles];

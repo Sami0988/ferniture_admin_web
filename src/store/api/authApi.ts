@@ -1,6 +1,7 @@
 import { baseApi } from '../baseApi';
 import type {
   ApiResponse,
+  AuthTokens,
   LoginRequest,
   LoginResponse,
   MfaVerifyRequest,
@@ -11,6 +12,8 @@ import type {
   MfaRegenerateBackupCodesRequest,
   MfaRegenerateBackupCodesResponse,
   ChangePasswordRequest,
+  RefreshRequest,
+  RefreshResponse,
 } from '@/types/api';
 
 export const authApi = baseApi.injectEndpoints({
@@ -62,7 +65,7 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
-    refreshToken: builder.mutation<ApiResponse<{ tokens: { accessToken: string; refreshToken: string } }>, { refreshToken: string }>({
+    refreshToken: builder.mutation<ApiResponse<RefreshResponse>, RefreshRequest>({
       query: (body) => ({
         url: '/auth/refresh',
         method: 'POST',
@@ -78,10 +81,11 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
-    logout: builder.mutation<void, void>({
-      query: () => ({
+    logout: builder.mutation<void, { refreshToken: string }>({
+      query: (body) => ({
         url: '/auth/logout',
         method: 'POST',
+        body,
       }),
     }),
   }),

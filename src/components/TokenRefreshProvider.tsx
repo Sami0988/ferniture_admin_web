@@ -22,35 +22,32 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
       return;
     }
 
-    refreshAuth().then((tokens) => {
+    refreshAuth().then(async (tokens) => {
       if (tokens) {
-        const fetchUser = async () => {
-          try {
-            const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
-            const userRes = await fetch(`${BASE_URL}/users/me`, {
-              headers: { Authorization: `Bearer ${tokens.accessToken}` },
-            });
-            if (userRes.ok) {
-              const userData = await userRes.json();
-              const user = userData.data;
-              dispatch(setCredentials({
-                user: {
-                  id: user.id,
-                  name: user.fullName || user.name || '',
-                  email: user.email || '',
-                  phone: user.phone || '',
-                  role: user.role || 'viewer',
-                  avatar: user.avatarUrl || user.avatar || null,
-                },
-                tokens,
-                mfaEnabled: user.mfaEnabled,
-              }));
-            }
-          } catch {
-            // ignore
+        try {
+          const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+          const userRes = await fetch(`${BASE_URL}/users/me`, {
+            headers: { Authorization: `Bearer ${tokens.accessToken}` },
+          });
+          if (userRes.ok) {
+            const userData = await userRes.json();
+            const user = userData.data;
+            dispatch(setCredentials({
+              user: {
+                id: user.id,
+                name: user.fullName || user.name || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                role: user.role || 'viewer',
+                avatar: user.avatarUrl || user.avatar || null,
+              },
+              tokens,
+              mfaEnabled: user.mfaEnabled,
+            }));
           }
-        };
-        fetchUser();
+        } catch {
+          // ignore
+        }
       }
       setIsRestoring(false);
     });
