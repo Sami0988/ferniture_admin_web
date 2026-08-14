@@ -2,6 +2,12 @@ import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
 import { logout } from './authSlice';
 
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
 const baseQuery = fetchBaseQuery({
@@ -61,7 +67,7 @@ const baseQueryWithReauth = async (
     }
 
     const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken;
+    const refreshToken = state.auth.refreshToken || getCookie('refreshToken');
 
     if (!refreshToken) {
       api.dispatch(logout());
