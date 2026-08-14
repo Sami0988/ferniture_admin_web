@@ -35,7 +35,7 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
       return;
     }
 
-    const token = refreshToken || getCookie('refreshToken');
+    const token = refreshToken || getCookie('refresh_token') || getCookie('refreshToken');
     if (!token) {
       hasAttemptedRefresh.current = true;
       setIsRestoring(false);

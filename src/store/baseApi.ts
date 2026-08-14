@@ -67,7 +67,7 @@ const baseQueryWithReauth = async (
     }
 
     const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken || getCookie('refreshToken');
+    const refreshToken = state.auth.refreshToken || getCookie('refresh_token') || getCookie('refreshToken');
 
     if (!refreshToken) {
       api.dispatch(logout());
