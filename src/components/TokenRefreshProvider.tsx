@@ -14,7 +14,7 @@ function getCookie(name: string): string | null {
 
 /**
  * Silently refreshes the access token on page load if a refresh token exists
- * in Redux or in the refreshToken cookie (which survives page refresh).
+ * in the refreshToken cookie (which survives page refresh).
  * Blocks children from rendering until the refresh attempt completes to prevent
  * API queries from firing with no token (race condition → 401 → logout).
  */
@@ -35,8 +35,11 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
       return;
     }
 
-    const token = refreshToken || getCookie('refresh_token') || getCookie('refreshToken');
+    const token = refreshToken || getCookie('refreshToken');
+    console.log('[TokenRefresh] token from Redux:', refreshToken, '| from cookie:', getCookie('refreshToken'), '| using:', token);
+
     if (!token) {
+      console.log('[TokenRefresh] No refresh token found, skipping restore');
       hasAttemptedRefresh.current = true;
       setIsRestoring(false);
       return;
@@ -46,15 +49,20 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
 
     (async () => {
       try {
+        console.log('[TokenRefresh] Sending refresh request with token:', token);
         const res = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: token }),
         });
 
+        console.log('[TokenRefresh] Response status:', res.status);
+        const data = await res.json();
+        console.log('[TokenRefresh] Response body:', JSON.stringify(data));
+
         if (res.ok) {
-          const data = await res.json();
           const tokens = data.data?.tokens || data.data;
+          console.log('[TokenRefresh] Parsed tokens:', tokens);
 
           if (tokens?.accessToken && tokens?.refreshToken) {
             dispatch(setTokens({
@@ -82,12 +90,15 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
                 tokens,
                 mfaEnabled: user.mfaEnabled,
               }));
+              console.log('[TokenRefresh] Session restored successfully');
             }
           }
         } else {
+          console.log('[TokenRefresh] Refresh failed, clearing session');
           dispatch(logout());
         }
-      } catch {
+      } catch (err) {
+        console.log('[TokenRefresh] Network error:', err);
         dispatch(logout());
       } finally {
         setIsRestoring(false);
