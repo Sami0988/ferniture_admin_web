@@ -6,6 +6,10 @@ import { setTokens, setCredentials, logout } from '@/store/authSlice';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
+// Module-level flag: only ONE refresh attempt across all instances
+let hasRefreshed = false;
+let refreshPromise: Promise<void> | null = null;
+
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
@@ -22,37 +26,42 @@ function getToken(name: string): string | null {
 
 /**
  * Silently refreshes the access token on page load if a refresh token exists
- * in cookie or localStorage (which survive page refresh and cookie clearing).
- * Blocks children from rendering until the refresh attempt completes.
+ * in cookie or localStorage. Uses a module-level flag to prevent multiple
+ * concurrent refresh attempts (which would consume/rotate the token).
  */
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const refreshToken = useAppSelector((s) => s.auth.refreshToken);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
-  const hasAttemptedRefresh = useRef(false);
-  const [isRestoring, setIsRestoring] = useState(true);
+  const [isRestoring, setIsRestoring] = useState(!hasRefreshed);
 
   useEffect(() => {
-    if (hasAttemptedRefresh.current) {
+    if (hasRefreshed) {
       setIsRestoring(false);
       return;
     }
     if (isAuthenticated) {
+      hasRefreshed = true;
       setIsRestoring(false);
       return;
     }
 
     const token = refreshToken || getToken('refreshToken');
-
     if (!token) {
-      hasAttemptedRefresh.current = true;
+      hasRefreshed = true;
       setIsRestoring(false);
       return;
     }
 
-    hasAttemptedRefresh.current = true;
+    // If a refresh is already in progress, wait for it
+    if (refreshPromise) {
+      refreshPromise.then(() => setIsRestoring(false));
+      return;
+    }
 
-    (async () => {
+    hasRefreshed = true;
+
+    refreshPromise = (async () => {
       try {
         const res = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
@@ -97,10 +106,12 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
         }
       } catch {
         dispatch(logout());
-      } finally {
-        setIsRestoring(false);
       }
     })();
+
+    refreshPromise.finally(() => {
+      setIsRestoring(false);
+    });
   }, [refreshToken, isAuthenticated, dispatch]);
 
   if (isRestoring) {
