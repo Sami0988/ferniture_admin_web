@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   useGetPaymentLetterByIdQuery,
   useUpdatePaymentLetterMutation,
@@ -28,6 +28,12 @@ const statusVariant: Record<string, 'default' | 'success' | 'warning' | 'danger'
   paid: 'success',
 };
 
+// Fixed footer contact details shown on every exported PDF page
+const FOOTER_EMAIL = 'kiduskassahun20th@gmail.com';
+const FOOTER_PHONE = '+251994437585';
+const FOOTER_WEBSITE = 'https://kassahun-tesegaye.vercel.app/en';
+const FOOTER_TEXT = `${FOOTER_EMAIL}   |   ${FOOTER_PHONE}   |   ${FOOTER_WEBSITE}`;
+
 export default function PaymentLetterDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -37,7 +43,7 @@ export default function PaymentLetterDetailPage() {
   const [deleteLetter, { isLoading: isDeleting }] = useDeletePaymentLetterMutation();
 
   const letter = letterData?.data;
-  
+
   // Fetch template if letter has a templateId
   const { data: templateData } = useGetLetterTemplateByIdQuery(letter?.templateId || '', {
     skip: !letter?.templateId,
@@ -46,7 +52,7 @@ export default function PaymentLetterDetailPage() {
   const { data: projectData } = useGetProjectByIdQuery(letter?.projectId || '', {
     skip: !letter?.projectId,
   });
-  
+
   const template = templateData?.data;
   const company = companyData?.data;
   const project = projectData?.data;
@@ -64,6 +70,16 @@ export default function PaymentLetterDetailPage() {
     referenceNumber: '',
     dueDate: '',
   });
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeHeight, setIframeHeight] = useState(600);
+
+  const handleIframeLoad = useCallback(() => {
+    const iframe = iframeRef.current;
+    if (iframe?.contentDocument?.body) {
+      const height = iframe.contentDocument.body.scrollHeight;
+      setIframeHeight(height || 600);
+    }
+  }, []);
 
   useEffect(() => {
     if (letter) {
@@ -112,13 +128,12 @@ export default function PaymentLetterDetailPage() {
     }
   };
 
-  // Generate letter HTML from template
-  const getLetterHtml = () => {
+  // Build the core letter HTML from template (no wrapper, no footer)
+  const buildLetterContent = () => {
     if (!letter) return null;
-    
+
     const date = new Date(letter.createdAt).toLocaleDateString('en-GB');
-    
-    // Replace body content with project-aware values
+
     let body = letter.body;
     if (project) {
       const branch = project.branchName || '';
@@ -132,7 +147,6 @@ export default function PaymentLetterDetailPage() {
       body = body.replace(/<project>/gi, projectTitle);
     }
 
-    // Detect style config from stored template or use defaults
     const config: TemplateStyleConfig = { ...DEFAULT_STYLE_CONFIG };
     if (template?.htmlContent) {
       const html = template.htmlContent;
@@ -178,6 +192,41 @@ export default function PaymentLetterDetailPage() {
     html = html.replace(/<price>/gi, '___________________');
     html = html.replace(/<project>/gi, '___________________');
 
+    return html;
+  };
+
+  // Full HTML for iframe preview (includes footer)
+  const getLetterHtml = () => {
+    const content = buildLetterContent();
+    if (!content) return null;
+
+    return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+  @page { margin: 0; size: A4; }
+  html, body { margin: 0; padding: 0; background: #e9e9ec; font-family: Arial, sans-serif; color: #333; }
+  .letter-capture { width: 794px; background: #ffffff; margin: 0 auto; }
+  .letter-footer { border-top: 1px solid #e5e7eb; padding: 10px 50px; text-align: center; font-size: 10px; color: #6b7280; }
+  @media print { body { background: #fff; } .letter-capture { box-shadow: none; margin: 0; width: 100%; } }
+</style>
+</head>
+<body>
+  <div class="letter-capture">
+    ${content}
+    <div class="letter-footer">${FOOTER_TEXT}</div>
+  </div>
+</body>
+</html>`;
+  };
+
+  // HTML for PDF generation (no footer - jsPDF stamps it)
+  const getLetterHtmlForPdf = () => {
+    const content = buildLetterContent();
+    if (!content) return null;
+
     return `<!DOCTYPE html>
 <html>
 <head>
@@ -192,7 +241,7 @@ export default function PaymentLetterDetailPage() {
 </head>
 <body>
   <div class="letter-capture">
-    ${html}
+    ${content}
   </div>
 </body>
 </html>`;
@@ -201,7 +250,7 @@ export default function PaymentLetterDetailPage() {
   const letterHtml = getLetterHtml();
 
   const handleDownloadPdf = async () => {
-    const html = getLetterHtml();
+    const html = getLetterHtmlForPdf();
     if (!html) {
       toast.error('Failed to generate PDF');
       return;
@@ -219,15 +268,15 @@ export default function PaymentLetterDetailPage() {
       document.body.appendChild(element);
 
       const captureTarget = element.querySelector('.letter-capture') as HTMLElement || element;
-      
-      await html2pdf()
+
+      const worker = html2pdf()
         .set({
-          margin: 0,
+          margin: [0, 0, 15, 0], // reserve space at bottom of every page for the footer
           filename: `payment-letter-${letter?.letterNumber || 'download'}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { 
-            scale: 2, 
-            useCORS: true, 
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
             letterRendering: true,
             logging: false,
             allowTaint: true,
@@ -235,9 +284,31 @@ export default function PaymentLetterDetailPage() {
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         })
-        .from(captureTarget)
-        .save();
-      
+        .from(captureTarget);
+
+      // Stamp the repeating footer (email, phone, website) on every page
+      await worker.toPdf().get('pdf').then((pdf: any) => {
+        const totalPages = pdf.internal.getNumberOfPages();
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const footerY = pageHeight - 8;
+
+        for (let i = 1; i <= totalPages; i++) {
+          pdf.setPage(i);
+
+          pdf.setDrawColor(229, 231, 235);
+          pdf.setLineWidth(0.2);
+          pdf.line(15, footerY - 5, pageWidth - 15, footerY - 5);
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(8);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(FOOTER_TEXT, pageWidth / 2, footerY, { align: 'center' });
+        }
+      });
+
+      await worker.save();
+
       document.body.removeChild(element);
       toast.success('PDF downloaded');
     } catch (err) {
@@ -322,10 +393,12 @@ export default function PaymentLetterDetailPage() {
               {/* Letter Content - Use template if available */}
               {letterHtml ? (
                 <iframe
+                  ref={iframeRef}
                   srcDoc={letterHtml}
-                  sandbox=""
+                  sandbox="allow-same-origin"
                   className="w-full border-0"
-                  style={{ minHeight: '600px' }}
+                  style={{ height: `${iframeHeight}px` }}
+                  onLoad={handleIframeLoad}
                   title="Payment Letter"
                 />
               ) : (
