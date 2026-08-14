@@ -1,20 +1,7 @@
 import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
 import { logout } from './authSlice';
-
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-  return match ? decodeURIComponent(match[1]) : null;
-}
-
-function getLocal(name: string): string | null {
-  try { return localStorage.getItem(name); } catch { return null; }
-}
-
-function getToken(name: string): string | null {
-  return getCookie(name) || getLocal(name);
-}
+import { refreshAuth, getToken } from './refreshAuth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
@@ -29,8 +16,7 @@ const baseQuery = fetchBaseQuery({
   },
 });
 
-// Single-flight refresh: only one /refresh call at a time
-let refreshPromise: Promise<{ data?: unknown; error?: unknown }> | null = null;
+// Single-flight refresh handled by shared refreshAuth module
 
 function redirectToLogin() {
   if (typeof window !== 'undefined') {
@@ -83,32 +69,9 @@ const baseQueryWithReauth = async (
       return result;
     }
 
-    // Single-flight: reuse existing refresh promise if one is in-flight
-    if (!refreshPromise) {
-      refreshPromise = fetch(`${BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            throw new Error('Refresh failed');
-          }
-          const data = await res.json();
-          return { data: data.data?.tokens || data.data };
-        })
-        .catch((err) => {
-          return { error: err };
-        })
-        .finally(() => {
-          refreshPromise = null;
-        });
-    }
+    const tokens = await refreshAuth();
 
-    const refreshResult = await refreshPromise;
-
-    if (refreshResult.data) {
-      const tokens = refreshResult.data as { accessToken: string; refreshToken: string };
+    if (tokens) {
       api.dispatch({ type: 'auth/setTokens', payload: tokens });
 
       // Retry the original request with new token
