@@ -8,12 +8,20 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function getLocal(name: string): string | null {
+  try { return localStorage.getItem(name); } catch { return null; }
+}
+
+function getToken(name: string): string | null {
+  return getCookie(name) || getLocal(name);
+}
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.accessToken;
+    const token = (getState() as RootState).auth.accessToken || getToken('accessToken');
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -67,7 +75,7 @@ const baseQueryWithReauth = async (
     }
 
     const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken || getCookie('refresh_token') || getCookie('refreshToken');
+    const refreshToken = state.auth.refreshToken || getToken('refreshToken');
 
     if (!refreshToken) {
       api.dispatch(logout());

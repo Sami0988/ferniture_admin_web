@@ -5,15 +5,6 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { setTokens, setCredentials, logout } from '@/store/authSlice';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
-const LOG_KEY = '__tokenRefreshDebug';
-
-function debugLog(msg: string) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
-    existing.push({ time: new Date().toISOString(), msg });
-    localStorage.setItem(LOG_KEY, JSON.stringify(existing.slice(-20)));
-  } catch {}
-}
 
 function getCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
@@ -21,6 +12,19 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function getLocal(name: string): string | null {
+  try { return localStorage.getItem(name); } catch { return null; }
+}
+
+function getToken(name: string): string | null {
+  return getCookie(name) || getLocal(name);
+}
+
+/**
+ * Silently refreshes the access token on page load if a refresh token exists
+ * in cookie or localStorage (which survive page refresh and cookie clearing).
+ * Blocks children from rendering until the refresh attempt completes.
+ */
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const refreshToken = useAppSelector((s) => s.auth.refreshToken);
@@ -29,29 +33,18 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
   const [isRestoring, setIsRestoring] = useState(true);
 
   useEffect(() => {
-    localStorage.removeItem(LOG_KEY);
-    debugLog('Provider mounted');
-    debugLog('Redux refreshToken: ' + refreshToken);
-    debugLog('Redux isAuthenticated: ' + isAuthenticated);
-    debugLog('Cookie refreshToken: ' + getCookie('refreshToken'));
-    debugLog('All cookies: ' + document.cookie);
-
     if (hasAttemptedRefresh.current) {
-      debugLog('Already attempted refresh, skipping');
       setIsRestoring(false);
       return;
     }
     if (isAuthenticated) {
-      debugLog('Already authenticated, skipping');
       setIsRestoring(false);
       return;
     }
 
-    const token = refreshToken || getCookie('refreshToken');
-    debugLog('Using token: ' + token);
+    const token = refreshToken || getToken('refreshToken');
 
     if (!token) {
-      debugLog('No token found, skipping restore');
       hasAttemptedRefresh.current = true;
       setIsRestoring(false);
       return;
@@ -61,33 +54,25 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
 
     (async () => {
       try {
-        debugLog('Sending POST /auth/refresh with refreshToken: ' + token);
         const res = await fetch(`${BASE_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refreshToken: token }),
         });
 
-        debugLog('Response status: ' + res.status);
-        const data = await res.json();
-        debugLog('Response body: ' + JSON.stringify(data).substring(0, 500));
-
         if (res.ok) {
+          const data = await res.json();
           const tokens = data.data?.tokens || data.data;
-          debugLog('Parsed tokens: ' + JSON.stringify(tokens));
 
           if (tokens?.accessToken && tokens?.refreshToken) {
             dispatch(setTokens({
               accessToken: tokens.accessToken,
               refreshToken: tokens.refreshToken,
             }));
-            debugLog('setTokens dispatched, fetching /users/me');
 
             const userRes = await fetch(`${BASE_URL}/users/me`, {
               headers: { Authorization: `Bearer ${tokens.accessToken}` },
             });
-
-            debugLog('/users/me status: ' + userRes.status);
 
             if (userRes.ok) {
               const userData = await userRes.json();
@@ -105,19 +90,12 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
                 tokens,
                 mfaEnabled: user.mfaEnabled,
               }));
-              debugLog('Session restored successfully!');
-            } else {
-              debugLog('/users/me FAILED');
             }
-          } else {
-            debugLog('Tokens shape invalid!');
           }
         } else {
-          debugLog('Refresh FAILED - calling logout');
           dispatch(logout());
         }
-      } catch (err: any) {
-        debugLog('Network error: ' + err.message);
+      } catch {
         dispatch(logout());
       } finally {
         setIsRestoring(false);
