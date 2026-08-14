@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTokens, setCredentials, logout } from '@/store/authSlice';
 
@@ -15,19 +15,32 @@ function getCookie(name: string): string | null {
 /**
  * Silently refreshes the access token on page load if a refresh token exists
  * in Redux or in the refreshToken cookie (which survives page refresh).
+ * Blocks children from rendering until the refresh attempt completes to prevent
+ * API queries from firing with no token (race condition → 401 → logout).
  */
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const refreshToken = useAppSelector((s) => s.auth.refreshToken);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const hasAttemptedRefresh = useRef(false);
+  const [isRestoring, setIsRestoring] = useState(true);
 
   useEffect(() => {
-    if (hasAttemptedRefresh.current) return;
-    if (isAuthenticated) return;
+    if (hasAttemptedRefresh.current) {
+      setIsRestoring(false);
+      return;
+    }
+    if (isAuthenticated) {
+      setIsRestoring(false);
+      return;
+    }
 
     const token = refreshToken || getCookie('refreshToken');
-    if (!token) return;
+    if (!token) {
+      hasAttemptedRefresh.current = true;
+      setIsRestoring(false);
+      return;
+    }
 
     hasAttemptedRefresh.current = true;
 
@@ -76,9 +89,22 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
         }
       } catch {
         dispatch(logout());
+      } finally {
+        setIsRestoring(false);
       }
     })();
   }, [refreshToken, isAuthenticated, dispatch]);
+
+  if (isRestoring) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <div style={{ textAlign: 'center', color: '#666' }}>
+          <div style={{ marginBottom: 12, fontSize: 14 }}>Restoring session...</div>
+          <div className="animate-spin" style={{ width: 24, height: 24, border: '3px solid #e5e7eb', borderTopColor: '#9ca3af', borderRadius: '50%', margin: '0 auto' }} />
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }
