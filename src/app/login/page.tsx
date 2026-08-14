@@ -93,8 +93,8 @@ function LoginForm() {
       }
 
       // Direct login (no MFA)
-      const { accessToken } = data.tokens || data;
-      await fetchAndStoreUser(accessToken);
+      const { accessToken, refreshToken } = data.tokens || data;
+      await fetchAndStoreUser(accessToken, refreshToken);
     } catch (err: unknown) {
       const error = err as { data?: { message?: string; errorCode?: string; lockedUntil?: string } };
       if (error?.data?.errorCode === 'ACCOUNT_LOCKED') {
