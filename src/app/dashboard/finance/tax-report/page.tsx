@@ -2,8 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useGetTaxReportQuery } from '@/store/api/taxReportApi';
-import { useAppSelector } from '@/store';
+import { useGetTaxReportQuery, useLazyExportTaxReportQuery } from '@/store/api/taxReportApi';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -24,7 +23,7 @@ const periods: { value: ReportPeriod; label: string }[] = [
 
 export default function TaxReportPage() {
   const router = useRouter();
-  const accessToken = useAppSelector((s) => s.auth.accessToken);
+  const [triggerExport] = useLazyExportTaxReportQuery();
   const [activePeriod, setActivePeriod] = useState<ReportPeriod>('month');
   const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [customFrom, setCustomFrom] = useState('');
@@ -46,29 +45,21 @@ export default function TaxReportPage() {
   const { data: report, isLoading, error } = useGetTaxReportQuery(queryParams);
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
-    const baseParams = new URLSearchParams();
-    baseParams.set('period', activePeriod);
+    const params: Record<string, string> = { period: activePeriod, format };
     if (activePeriod !== 'custom' && referenceDate) {
-      baseParams.set('referenceDate', referenceDate);
+      params.referenceDate = referenceDate;
     } else {
-      if (customFrom) baseParams.set('from', customFrom);
-      if (customTo) baseParams.set('to', customTo);
+      if (customFrom) params.from = customFrom;
+      if (customTo) params.to = customTo;
     }
-    baseParams.set('format', format);
 
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1'}/tax-report/export?${baseParams.toString()}`;
-      const res = await fetch(url, {
-        credentials: 'include',
-        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
-      });
-      if (!res.ok) throw new Error(`Export failed (${res.status})`);
-      const blob = await res.blob();
-      const disposition = res.headers.get('content-disposition');
-      const filename = disposition?.match(/filename="?([^";\s]+)"?/)?.[1] || `tax-report.${format}`;
+      const result = await triggerExport({ params }).unwrap();
+      const blob = result as unknown as Blob;
+      const ext = format === 'xlsx' ? 'xlsx' : 'pdf';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = filename;
+      a.download = `tax-report.${ext}`;
       a.click();
       URL.revokeObjectURL(a.href);
       toast.success(`${format.toUpperCase()} report downloaded`);

@@ -10,7 +10,14 @@ export const taxReportApi = baseApi.injectEndpoints({
       }),
       transformResponse: (response: any) => response?.data ?? response,
     }),
+    exportTaxReport: builder.query<Blob, { params: Record<string, string> }>({
+      query: ({ params }) => ({
+        url: '/tax-report/export',
+        params,
+        responseHandler: (response) => response.blob(),
+      }),
+    }),
   }),
 });
 
-export const { useGetTaxReportQuery } = taxReportApi;
+export const { useGetTaxReportQuery, useLazyExportTaxReportQuery } = taxReportApi;
