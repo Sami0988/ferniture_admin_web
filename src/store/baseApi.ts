@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
-import { logout } from './authSlice';
+import { logout, getStoredRefreshToken } from './authSlice';
 import { refreshAuth } from './refreshAuth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
@@ -68,7 +68,7 @@ const baseQueryWithReauth = async (
       return result;
     }
 
-    const refreshToken = (api.getState() as RootState).auth.refreshToken;
+    const refreshToken = (api.getState() as RootState).auth.refreshToken || getStoredRefreshToken();
     const tokens = await refreshAuth(refreshToken);
 
     if (tokens) {

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials } from '@/store/authSlice';
+import { getStoredRefreshToken } from '@/store/authSlice';
 import { refreshAuth, resetRefreshState } from '@/store/refreshAuth';
 
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
@@ -25,7 +26,7 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
 
     let cancelled = false;
 
-    refreshAuth().then(async (tokens) => {
+    refreshAuth(getStoredRefreshToken()).then(async (tokens) => {
       if (cancelled || !mountedRef.current) return;
       if (tokens) {
         try {

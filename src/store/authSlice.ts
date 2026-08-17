@@ -23,6 +23,22 @@ interface AuthState {
   } | null;
 }
 
+const REFRESH_TOKEN_KEY = 'kw_refresh_token';
+
+function persistRefreshToken(token: string | null) {
+  if (typeof window === 'undefined') return;
+  if (token) {
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
+  } else {
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+export function getStoredRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
 // Cross-tab logout broadcast
 let authChannel: BroadcastChannel | null = null;
 function getAuthChannel(): BroadcastChannel | null {
@@ -62,6 +78,7 @@ const authSlice = createSlice({
       state.accessToken = action.payload.tokens.accessToken;
       state.refreshToken = action.payload.tokens.refreshToken;
       state.isAuthenticated = true;
+      persistRefreshToken(action.payload.tokens.refreshToken);
       if (action.payload.mfaEnabled !== undefined) {
         state.mfaEnabled = action.payload.mfaEnabled;
       }
@@ -69,6 +86,7 @@ const authSlice = createSlice({
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
+      persistRefreshToken(action.payload.refreshToken);
     },
     setUser: (state, action: PayloadAction<AuthState['user']>) => {
       state.user = action.payload;
@@ -86,6 +104,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.mfaEnabled = false;
       state.rateLimitError = null;
+      persistRefreshToken(null);
       broadcastLogout();
     },
   },
