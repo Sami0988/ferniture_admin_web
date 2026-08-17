@@ -81,11 +81,11 @@ export const authApi = baseApi.injectEndpoints({
       }),
     }),
 
-    logout: builder.mutation<void, { refreshToken: string }>({
-      query: (body) => ({
+    logout: builder.mutation<void, void>({
+      query: () => ({
         url: '/auth/logout',
         method: 'POST',
-        body,
+        credentials: 'include',
       }),
     }),
   }),

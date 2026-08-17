@@ -8,13 +8,15 @@ import { useGetUnreadCountQuery } from '@/store/api/notificationsApi';
 import { useLogoutMutation } from '@/store/api/authApi';
 import Avatar from '@/components/ui/Avatar';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
+import GlobalSearch from '@/components/layout/GlobalSearch';
 
 export default function TopBar() {
   const router = useRouter();
-  const { user, logout, refreshToken } = useAuth();
+  const { user, logout } = useAuth();
   const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode } = useUI();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const { data: unreadData } = useGetUnreadCountQuery();
   const unreadCount = unreadData?.data?.count ?? 0;
   const notifRef = useRef<HTMLDivElement>(null);
@@ -37,13 +39,23 @@ export default function TopBar() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [showNotifications, showProfile]);
 
-  const handleLogout = async () => {
-    if (refreshToken) {
-      try {
-        await logoutApi({ refreshToken }).unwrap();
-      } catch {
-        // Ignore errors — clear local state anyway
+  // Global Ctrl+K / Cmd+K shortcut
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
       }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logoutApi().unwrap();
+    } catch {
+      // Ignore errors — clear local state anyway
     }
     logout();
     router.push('/login');
@@ -65,15 +77,17 @@ export default function TopBar() {
       </button>
 
       {/* Search */}
-      <div className="flex-1 max-w-md">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            placeholder="Search projects, customers, orders..."
-            className="h-9 w-full rounded-lg border border-border bg-surface-hover/50 pl-9 pr-4 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-          />
-        </div>
+      <div className="w-96">
+        <button
+          onClick={() => setShowSearch(true)}
+          className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-surface-hover/50 px-3 text-sm text-muted hover:border-muted transition-colors"
+        >
+          <Search className="h-4 w-4 shrink-0" />
+          <span className="flex-1 text-left">Search suppliers, customers, projects...</span>
+          <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-border bg-surface px-1.5 py-0.5 text-[10px] text-muted font-medium">
+            Ctrl K
+          </kbd>
+        </button>
       </div>
 
       {/* Spacer */}
@@ -143,6 +157,8 @@ export default function TopBar() {
           )}
         </div>
       </div>
+
+      <GlobalSearch open={showSearch} onClose={() => setShowSearch(false)} />
     </header>
   );
 }

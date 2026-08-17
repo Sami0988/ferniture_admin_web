@@ -1,19 +1,13 @@
 import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
 import { logout } from './authSlice';
-import { refreshAuth, getToken } from './refreshAuth';
+import { refreshAuth } from './refreshAuth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
-  prepareHeaders: (headers, { getState }) => {
-    const token = (getState() as RootState).auth.accessToken || getToken('accessToken');
-    if (token) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    return headers;
-  },
+  credentials: 'include',
 });
 
 // Single-flight refresh handled by shared refreshAuth module
@@ -51,19 +45,17 @@ const baseQueryWithReauth = async (
 
   // Handle 401 Unauthorized
   if (result.error && result.error.status === 401) {
-    // Check if this is an account locked error
-    const errorData = result.error.data as { errorCode?: string; message?: string } | undefined;
-    if (errorData?.errorCode === 'ACCOUNT_LOCKED') {
-      // Don't attempt refresh for locked accounts
+    // Don't attempt refresh if this IS the refresh request
+    const requestUrl = typeof args === 'string' ? args : args.url;
+    if (requestUrl.includes('/auth/refresh')) {
       api.dispatch(logout());
       redirectToLogin();
       return result;
     }
 
-    const state = api.getState() as RootState;
-    const refreshToken = state.auth.refreshToken || getToken('refreshToken');
-
-    if (!refreshToken) {
+    // Check if this is an account locked error
+    const errorData = result.error.data as { errorCode?: string; message?: string } | undefined;
+    if (errorData?.errorCode === 'ACCOUNT_LOCKED') {
       api.dispatch(logout());
       redirectToLogin();
       return result;
@@ -73,11 +65,8 @@ const baseQueryWithReauth = async (
 
     if (tokens) {
       api.dispatch({ type: 'auth/setTokens', payload: tokens });
-
-      // Retry the original request with new token
       return baseQuery(args, api, extraOptions);
     } else {
-      // Refresh failed — clear auth and redirect
       api.dispatch(logout());
       redirectToLogin();
     }
@@ -112,6 +101,8 @@ export const baseApi = createApi({
     'DashboardReport',
     'PaymentLetter',
     'LetterTemplate',
+    'Supplier',
+    'Purchase',
   ],
   endpoints: () => ({}),
 });

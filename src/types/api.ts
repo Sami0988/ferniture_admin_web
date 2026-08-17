@@ -358,6 +358,7 @@ export interface CreateProjectRequest {
   leadEmployeeId?: string;
   priority?: ProjectPriority;
   assigneeIds?: string[];
+  priceBeforeVat?: number;
   totalPrice?: number;
   paidNowPrice?: number;
   branchName?: string;
@@ -372,6 +373,7 @@ export interface UpdateProjectRequest {
   deliveryDate?: string;
   leadEmployeeId?: string;
   assigneeIds?: string[];
+  priceBeforeVat?: number;
   totalPrice?: number;
   paidNowPrice?: number;
   branchName?: string;
@@ -964,6 +966,116 @@ export interface AuditLogFilters {
   userId?: string;
   page?: number;
   limit?: number;
+}
+
+// ── Suppliers ──────────────────────────────────────────────
+export interface ApiSupplier {
+  id: string;
+  companyName: string;
+  tinNumber: string;
+  bankAccountNumber: string | null;
+  phone: string | null;
+  address: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSupplierRequest {
+  companyName: string;
+  tinNumber: string;
+  bankAccountNumber?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface UpdateSupplierRequest {
+  companyName?: string;
+  tinNumber?: string;
+  bankAccountNumber?: string;
+  phone?: string;
+  address?: string;
+}
+
+// ── Purchases ──────────────────────────────────────────────
+export interface ApiPurchaseItem {
+  id: string;
+  purchaseId: string;
+  materialName: string;
+  quantity: string;
+  unitPrice: string;
+  lineTotal: string;
+}
+
+export interface ApiPurchase {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  fsNumber: string;
+  bankTransactionNumber: string | null;
+  purchaseDate: string;
+  amountBeforeVat: string;
+  vatAmount: string;
+  withholdingAmount: string;
+  totalAmount: string;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiPurchaseDetail extends ApiPurchase {
+  supplierTin: string;
+  supplierPhone: string | null;
+  supplierAddress: string | null;
+  items: ApiPurchaseItem[];
+}
+
+export interface CreatePurchaseItemInput {
+  materialName: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface CreatePurchaseRequest {
+  supplierId: string;
+  fsNumber: string;
+  bankTransactionNumber?: string;
+  purchaseDate: string;
+  items: CreatePurchaseItemInput[];
+}
+
+export interface UpdatePurchaseRequest {
+  supplierId?: string;
+  fsNumber?: string;
+  bankTransactionNumber?: string;
+  purchaseDate?: string;
+  items?: CreatePurchaseItemInput[];
+}
+
+// ── Tax Report ─────────────────────────────────────────────
+export type ReportPeriod = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom';
+
+export interface TaxReportQuery {
+  period: ReportPeriod;
+  referenceDate?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface TaxReportResponse {
+  period: { type: string; from: string; to: string; label: string };
+  purchases: { totalBeforeVat: number; totalVat: number; totalWithholding: number; count: number };
+  workProjects: { totalBeforeVat: number; totalVat: number; count: number };
+  vatSummary: {
+    outputVat: number;
+    inputVat: number;
+    netVat: number;
+    status: 'PAYABLE_TO_GOVERNMENT' | 'REFUNDABLE_FROM_GOVERNMENT';
+  };
+  withholdingSummary: { totalWithheld: number };
+  breakdown: {
+    purchases: Array<{ id: string; supplierName: string | null; fsNumber: string; purchaseDate: string; amountBeforeVat: string; vatAmount: string; withholdingAmount: string; totalAmount: string }>;
+    workProjects: Array<{ id: string; projectName: string; clientName: string | null; projectDate: string; priceBeforeVat: string; vatAmount: string; totalPrice: string }>;
+  };
 }
 
 // ── Gallery Projects ─────────────────────────────────────────

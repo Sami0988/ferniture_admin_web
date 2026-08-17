@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { setCredentials, logout } from '@/store/authSlice';
-import { refreshAuth, getToken } from '@/store/refreshAuth';
+import { setCredentials } from '@/store/authSlice';
+import { refreshAuth } from '@/store/refreshAuth';
 
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
@@ -16,18 +16,12 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
       return;
     }
 
-    const token = getToken('refreshToken');
-    if (!token) {
-      setIsRestoring(false);
-      return;
-    }
-
     refreshAuth().then(async (tokens) => {
       if (tokens) {
         try {
           const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
           const userRes = await fetch(`${BASE_URL}/users/me`, {
-            headers: { Authorization: `Bearer ${tokens.accessToken}` },
+            credentials: 'include',
           });
           if (userRes.ok) {
             const userData = await userRes.json();

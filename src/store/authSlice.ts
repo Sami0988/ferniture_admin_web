@@ -23,22 +23,25 @@ interface AuthState {
   } | null;
 }
 
-function setCookie(name: string, value: string, days?: number) {
-  if (typeof document === 'undefined') return;
-  const expires = days != null ? `; expires=${new Date(Date.now() + days * 864e5).toUTCString()}` : '';
-  document.cookie = `${name}=${encodeURIComponent(value)}${expires}; path=/; SameSite=Lax`;
+// Cross-tab logout broadcast
+let authChannel: BroadcastChannel | null = null;
+function getAuthChannel(): BroadcastChannel | null {
+  if (typeof window === 'undefined') return null;
+  if (!authChannel) {
+    try {
+      authChannel = new BroadcastChannel('auth');
+      authChannel.onmessage = (e) => {
+        if (e.data === 'logout') {
+          window.location.href = '/login';
+        }
+      };
+    } catch {}
+  }
+  return authChannel;
 }
 
-function removeCookie(name: string) {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-}
-
-function setLocal(key: string, value: string) {
-  try { localStorage.setItem(key, value); } catch {}
-}
-function removeLocal(key: string) {
-  try { localStorage.removeItem(key); } catch {}
+function broadcastLogout() {
+  getAuthChannel()?.postMessage('logout');
 }
 
 const initialState: AuthState = {
@@ -62,22 +65,10 @@ const authSlice = createSlice({
       if (action.payload.mfaEnabled !== undefined) {
         state.mfaEnabled = action.payload.mfaEnabled;
       }
-      if (typeof document !== 'undefined') {
-        setCookie('accessToken', action.payload.tokens.accessToken, 7);
-        setCookie('refreshToken', action.payload.tokens.refreshToken, 7);
-        setLocal('refreshToken', action.payload.tokens.refreshToken);
-        setLocal('accessToken', action.payload.tokens.accessToken);
-      }
     },
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
-      if (typeof document !== 'undefined') {
-        setCookie('accessToken', action.payload.accessToken, 7);
-        setCookie('refreshToken', action.payload.refreshToken, 7);
-        setLocal('refreshToken', action.payload.refreshToken);
-        setLocal('accessToken', action.payload.accessToken);
-      }
     },
     setUser: (state, action: PayloadAction<AuthState['user']>) => {
       state.user = action.payload;
@@ -95,13 +86,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.mfaEnabled = false;
       state.rateLimitError = null;
-      if (typeof document !== 'undefined') {
-        removeCookie('accessToken');
-        removeCookie('refreshToken');
-        removeLocal('accessToken');
-        removeLocal('refreshToken');
-        removeLocal('__tokenRefreshDebug');
-      }
+      broadcastLogout();
     },
   },
 });

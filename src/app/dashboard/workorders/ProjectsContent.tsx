@@ -90,7 +90,7 @@ export default function ProjectsContent() {
   const [formPriority, setFormPriority] = useState<ProjectPriority>('normal');
   const [formOrderDate, setFormOrderDate] = useState('');
   const [formDeliveryDate, setFormDeliveryDate] = useState('');
-  const [formTotalPrice, setFormTotalPrice] = useState('');
+  const [formPriceBeforeVat, setFormPriceBeforeVat] = useState('');
   const [formPaidNowPrice, setFormPaidNowPrice] = useState('');
   const [formBranchName, setFormBranchName] = useState('');
   const [formCity, setFormCity] = useState('');
@@ -157,7 +157,7 @@ export default function ProjectsContent() {
         orderDate: formOrderDate,
         deliveryDate: formDeliveryDate || undefined,
         priority: formPriority,
-        totalPrice: formTotalPrice ? parseFloat(formTotalPrice) : undefined,
+        priceBeforeVat: formPriceBeforeVat ? parseFloat(formPriceBeforeVat) : undefined,
         paidNowPrice: formPaidNowPrice ? parseFloat(formPaidNowPrice) : undefined,
         branchName: formBranchName || undefined,
         city: formCity || undefined,
@@ -169,7 +169,7 @@ export default function ProjectsContent() {
       setFormCustomerId('');
       setFormOrderDate('');
       setFormDeliveryDate('');
-      setFormTotalPrice('');
+      setFormPriceBeforeVat('');
       setFormPaidNowPrice('');
       setFormBranchName('');
       setFormCity('');
@@ -604,16 +604,38 @@ export default function ProjectsContent() {
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-foreground">Total Price (ETB)</label>
+              <label className="block text-sm font-medium text-foreground">Price Before VAT (ETB)</label>
               <input
                 type="number"
                 className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-                value={formTotalPrice}
-                onChange={(e) => setFormTotalPrice(e.target.value)}
+                value={formPriceBeforeVat}
+                onChange={(e) => setFormPriceBeforeVat(e.target.value)}
                 placeholder="0"
                 min="0"
               />
             </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-muted">VAT (15%)</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface-hover px-3 py-2 text-sm text-muted cursor-not-allowed"
+                value={formPriceBeforeVat ? formatCurrency(parseFloat(formPriceBeforeVat) * 0.15) : ''}
+                readOnly
+                placeholder="—"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-muted">Total (incl. VAT)</label>
+              <input
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface-hover px-3 py-2 text-sm text-foreground font-medium cursor-not-allowed"
+                value={formPriceBeforeVat ? formatCurrency(parseFloat(formPriceBeforeVat) * 1.15) : ''}
+                readOnly
+                placeholder="—"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Paid Now (ETB)</label>
               <input
@@ -626,13 +648,13 @@ export default function ProjectsContent() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-foreground">Remaining (ETB)</label>
+              <label className="block text-sm font-medium text-muted">Remaining</label>
               <input
-                type="number"
-                className="flex w-full rounded-lg border border-border bg-surface-hover px-3 py-2 text-sm text-foreground cursor-not-allowed"
-                value={formTotalPrice ? Math.max(0, parseFloat(formTotalPrice) - (formPaidNowPrice ? parseFloat(formPaidNowPrice) : 0)) : ''}
+                type="text"
+                className="flex w-full rounded-lg border border-border bg-surface-hover px-3 py-2 text-sm text-muted cursor-not-allowed"
+                value={formPriceBeforeVat ? formatCurrency(Math.max(0, parseFloat(formPriceBeforeVat) * 1.15 - (formPaidNowPrice ? parseFloat(formPaidNowPrice) : 0))) : ''}
                 readOnly
-                placeholder="0"
+                placeholder="—"
               />
             </div>
           </div>
