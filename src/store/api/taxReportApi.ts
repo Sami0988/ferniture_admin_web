@@ -2,6 +2,7 @@ import { baseApi } from '../baseApi';
 import type { TaxReportResponse, TaxReportQuery } from '@/types/api';
 
 export const taxReportApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getTaxReport: builder.query<TaxReportResponse, TaxReportQuery>({
       query: (params) => ({
