@@ -5,13 +5,13 @@ import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import OtpInput from '@/components/ui/OtpInput';
-import { ArrowLeft, Mail, Lock, Check } from 'lucide-react';
+import { ArrowLeft, Mail, Phone, Lock, Check } from 'lucide-react';
 
 type ResetStep = 'email' | 'otp' | 'new-password' | 'success';
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState<ResetStep>('email');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -21,11 +21,20 @@ export default function ForgotPasswordPage() {
 
   const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
+  const isEmail = identifier.includes('@');
+
   useEffect(() => {
     if (countdown <= 0) return;
     const timer = setInterval(() => setCountdown((p) => p - 1), 1000);
     return () => clearInterval(timer);
   }, [countdown]);
+
+  const buildPayload = () => {
+    if (isEmail) {
+      return { email: identifier, phone: '' };
+    }
+    return { email: '', phone: identifier };
+  };
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +44,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(buildPayload()),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -62,7 +71,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch(`${BASE_URL}/auth/verify-reset-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp }),
+        body: JSON.stringify({ ...buildPayload(), otp }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -92,7 +101,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch(`${BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, otp, newPassword: password }),
+        body: JSON.stringify({ ...buildPayload(), otp, newPassword: password }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -113,7 +122,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify(buildPayload()),
       });
       if (!res.ok) throw new Error('Failed to resend');
       setCountdown(60);
@@ -133,13 +142,13 @@ export default function ForgotPasswordPage() {
           Back to login
         </Link>
 
-        {/* Step 1: Email */}
+        {/* Step 1: Email or Phone */}
         {step === 'email' && (
           <>
             <div>
               <h2 className="text-2xl font-bold text-foreground">Reset password</h2>
               <p className="text-sm text-muted mt-1">
-                Enter your email and we&apos;ll send you a reset code.
+                Enter your email or phone number and we&apos;ll send you a reset code.
               </p>
             </div>
 
@@ -151,12 +160,12 @@ export default function ForgotPasswordPage() {
               )}
 
               <Input
-                label="Email address"
-                type="email"
-                icon={<Mail className="h-4 w-4" />}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@kassahun.com"
+                label="Email or Phone"
+                type="text"
+                icon={isEmail ? <Mail className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="admin@kassahun.com or +251..."
                 required
               />
               <Button type="submit" className="w-full" size="lg" loading={loading}>
@@ -170,9 +179,9 @@ export default function ForgotPasswordPage() {
         {step === 'otp' && (
           <>
             <div>
-              <h2 className="text-2xl font-bold text-foreground">Check your email</h2>
+              <h2 className="text-2xl font-bold text-foreground">Check your {isEmail ? 'email' : 'phone'}</h2>
               <p className="text-sm text-muted mt-1">
-                We&apos;ve sent a 6-digit code to <strong>{email}</strong>
+                We&apos;ve sent a 6-digit code to <strong>{identifier}</strong>
               </p>
             </div>
 
