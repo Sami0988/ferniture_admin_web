@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetTaxReportQuery } from '@/store/api/taxReportApi';
+import { useAuth } from '@/hooks/useStore';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -23,6 +24,7 @@ const periods: { value: ReportPeriod; label: string }[] = [
 
 export default function TaxReportPage() {
   const router = useRouter();
+  const { accessToken } = useAuth();
   const [activePeriod, setActivePeriod] = useState<ReportPeriod>('month');
   const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [customFrom, setCustomFrom] = useState('');
@@ -58,6 +60,7 @@ export default function TaxReportPage() {
       const url = `${process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1'}/tax-report/export?${baseParams.toString()}`;
       const res = await fetch(url, {
         credentials: 'include',
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       });
       if (!res.ok) throw new Error(`Export failed (${res.status})`);
       const blob = await res.blob();
