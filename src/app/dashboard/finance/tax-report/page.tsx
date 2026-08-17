@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetTaxReportQuery } from '@/store/api/taxReportApi';
-import { useAuth } from '@/hooks/useStore';
+import { useAppSelector } from '@/store';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
@@ -24,7 +24,7 @@ const periods: { value: ReportPeriod; label: string }[] = [
 
 export default function TaxReportPage() {
   const router = useRouter();
-  const { accessToken } = useAuth();
+  const accessToken = useAppSelector((s) => s.auth.accessToken);
   const [activePeriod, setActivePeriod] = useState<ReportPeriod>('month');
   const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [customFrom, setCustomFrom] = useState('');
