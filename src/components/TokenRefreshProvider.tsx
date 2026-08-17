@@ -32,6 +32,7 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
           const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
           const userRes = await fetch(`${BASE_URL}/users/me`, {
             credentials: 'include',
+            headers: { Authorization: `Bearer ${tokens.accessToken}` },
           });
           if (userRes.ok) {
             const userData = await userRes.json();

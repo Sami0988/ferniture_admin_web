@@ -8,6 +8,13 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.on
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
+  prepareHeaders: (headers, { getState }) => {
+    const token = (getState() as RootState).auth.accessToken;
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
+  },
 });
 
 // Single-flight refresh handled by shared refreshAuth module
@@ -61,7 +68,8 @@ const baseQueryWithReauth = async (
       return result;
     }
 
-    const tokens = await refreshAuth();
+    const refreshToken = (api.getState() as RootState).auth.refreshToken;
+    const tokens = await refreshAuth(refreshToken);
 
     if (tokens) {
       api.dispatch({ type: 'auth/setTokens', payload: tokens });

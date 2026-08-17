@@ -3,7 +3,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.on
 let refreshPromise: Promise<{ accessToken: string; refreshToken: string } | null> | null = null;
 let refreshCancelled = false;
 
-export async function refreshAuth(): Promise<{ accessToken: string; refreshToken: string } | null> {
+export async function refreshAuth(refreshToken?: string | null): Promise<{ accessToken: string; refreshToken: string } | null> {
   if (refreshCancelled) return null;
   if (refreshPromise) return refreshPromise;
 
@@ -14,6 +14,8 @@ export async function refreshAuth(): Promise<{ accessToken: string; refreshToken
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
       });
 
       if (refreshCancelled) return null;

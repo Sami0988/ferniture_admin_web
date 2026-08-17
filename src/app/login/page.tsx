@@ -49,6 +49,7 @@ function LoginForm() {
 
   const fetchAndStoreUser = useCallback(async (accessToken: string, refreshToken?: string) => {
     const userRes = await fetch(`${BASE_URL}/users/me`, {
+      credentials: 'include',
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const userData = await userRes.json();
