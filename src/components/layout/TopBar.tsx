@@ -6,6 +6,7 @@ import { Search, Bell, Moon, Sun, PanelLeftClose, PanelLeft, LogOut, ChevronDown
 import { useUI, useAuth } from '@/hooks/useStore';
 import { useGetUnreadCountQuery } from '@/store/api/notificationsApi';
 import { useLogoutMutation } from '@/store/api/authApi';
+import { cancelRefresh } from '@/store/refreshAuth';
 import Avatar from '@/components/ui/Avatar';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
 import GlobalSearch from '@/components/layout/GlobalSearch';
@@ -52,6 +53,7 @@ export default function TopBar() {
   }, []);
 
   const handleLogout = async () => {
+    cancelRefresh();
     try {
       await logoutApi().unwrap();
     } catch {

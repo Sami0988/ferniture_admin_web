@@ -1,22 +1,32 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials } from '@/store/authSlice';
-import { refreshAuth } from '@/store/refreshAuth';
+import { refreshAuth, resetRefreshState } from '@/store/refreshAuth';
 
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
   const [isRestoring, setIsRestoring] = useState(true);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
       setIsRestoring(false);
+      resetRefreshState();
       return;
     }
 
+    let cancelled = false;
+
     refreshAuth().then(async (tokens) => {
+      if (cancelled || !mountedRef.current) return;
       if (tokens) {
         try {
           const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
@@ -43,8 +53,12 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
           // ignore
         }
       }
-      setIsRestoring(false);
+      if (!cancelled && mountedRef.current) {
+        setIsRestoring(false);
+      }
     });
+
+    return () => { cancelled = true; };
   }, [isAuthenticated, dispatch]);
 
   if (isRestoring) {
