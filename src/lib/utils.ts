@@ -1,6 +1,11 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+function getCalendarFromStorage(): string {
+  if (typeof window === 'undefined') return 'gc';
+  try { return localStorage.getItem('kw_calendar') || 'gc'; } catch { return 'gc'; }
+}
+
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -14,7 +19,14 @@ export function formatCurrency(amount: number | string): string {
   }).format(num)}`;
 }
 
+function formatEcDate(dateStr: string): string {
+  return dateStr;
+}
+
 export function formatDate(date: string): string {
+  if (getCalendarFromStorage() === 'ec') {
+    return formatEcDate(date);
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -23,6 +35,9 @@ export function formatDate(date: string): string {
 }
 
 export function formatDateTime(date: string): string {
+  if (getCalendarFromStorage() === 'ec') {
+    return formatEcDate(date);
+  }
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
