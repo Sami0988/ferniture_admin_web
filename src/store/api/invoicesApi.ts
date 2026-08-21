@@ -18,7 +18,12 @@ export const invoicesApi = baseApi.injectEndpoints({
     getInvoices: builder.query<PaginatedResponse<ApiInvoice>, InvoiceFilters>({
       query: (params) => ({
         url: '/invoices',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.paymentStatus != null && { paymentStatus: params.paymentStatus }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Invoice', 'Calendar'],

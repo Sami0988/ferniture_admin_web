@@ -7,7 +7,10 @@ export const usersApi = baseApi.injectEndpoints({
     getUsers: builder.query<PaginatedResponse<ApiUser>, { page?: number; limit?: number }>({
       query: (params) => ({
         url: '/users',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['User'],

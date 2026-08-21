@@ -15,7 +15,12 @@ export const employeesApi = baseApi.injectEndpoints({
     getEmployees: builder.query<PaginatedResponse<ApiEmployee>, { page?: number; limit?: number; specialty?: string; search?: string }>({
       query: (params) => ({
         url: '/employees',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.specialty != null && { specialty: params.specialty }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Employee', 'Calendar'],

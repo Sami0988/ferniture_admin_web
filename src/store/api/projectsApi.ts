@@ -22,7 +22,14 @@ export const projectsApi = baseApi.injectEndpoints({
     getProjects: builder.query<PaginatedResponse<ApiProject>, ProjectFilters>({
       query: (params) => ({
         url: '/projects',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.status != null && { status: params.status }),
+          ...(params.division != null && { division: params.division }),
+          ...(params.priority != null && { priority: params.priority }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Project', 'Calendar'],

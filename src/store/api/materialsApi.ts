@@ -34,7 +34,13 @@ export const materialsApi = baseApi.injectEndpoints({
     getMaterials: builder.query<PaginatedResponse<ApiMaterial>, { category?: string; isActive?: boolean; page?: number; limit?: number; search?: string }>({
       query: (params) => ({
         url: '/materials',
-        params,
+        params: {
+          ...(params.category != null && { category: params.category }),
+          ...(params.isActive != null && { isActive: String(params.isActive) }),
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Material'],

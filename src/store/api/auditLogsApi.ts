@@ -7,7 +7,12 @@ export const auditLogsApi = baseApi.injectEndpoints({
     getAuditLogs: builder.query<PaginatedResponse<AuditLog>, AuditLogFilters>({
       query: (params) => ({
         url: '/audit-logs',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.entityType != null && { entityType: params.entityType }),
+          ...(params.userId != null && { userId: params.userId }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['AuditLog', 'Calendar'],

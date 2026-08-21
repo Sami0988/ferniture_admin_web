@@ -21,7 +21,10 @@ export const adminApi = baseApi.injectEndpoints({
     getProducts: builder.query<PaginatedResponse<WebsiteProduct>, { page?: number; limit?: number }>({
       query: (params) => ({
         url: '/admin/products',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Product'],
@@ -122,7 +125,10 @@ export const adminApi = baseApi.injectEndpoints({
     getContacts: builder.query<PaginatedResponse<WebsiteContact>, { page?: number; limit?: number }>({
       query: (params) => ({
         url: '/admin/contact',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Contact'],
@@ -141,7 +147,10 @@ export const adminApi = baseApi.injectEndpoints({
     getQuotes: builder.query<PaginatedResponse<WebsiteQuote>, { page?: number; limit?: number }>({
       query: (params) => ({
         url: '/admin/quotes',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Quote'],

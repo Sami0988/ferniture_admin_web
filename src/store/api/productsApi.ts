@@ -25,7 +25,12 @@ export const productsApi = baseApi.injectEndpoints({
     getProducts: builder.query<PaginatedResponse<WebsiteProduct>, { page?: number; limit?: number; division?: string; search?: string }>({
       query: (params) => ({
         url: '/admin/products',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.division != null && { division: params.division }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Product'],

@@ -14,7 +14,13 @@ export const paymentLettersApi = baseApi.injectEndpoints({
     getPaymentLetters: builder.query<PaginatedResponse<ApiPaymentLetter>, PaymentLetterFilters>({
       query: (params) => ({
         url: '/payment-letters',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.projectId != null && { projectId: params.projectId }),
+          ...(params.customerId != null && { customerId: params.customerId }),
+          ...(params.status != null && { status: params.status }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['PaymentLetter', 'Calendar'],

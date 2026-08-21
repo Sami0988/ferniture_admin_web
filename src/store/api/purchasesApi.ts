@@ -14,7 +14,13 @@ export const purchasesApi = baseApi.injectEndpoints({
     getPurchases: builder.query<PaginatedResponse<ApiPurchase>, { page?: number; limit?: number; supplierId?: string; from?: string; to?: string }>({
       query: (params) => ({
         url: '/purchases',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.supplierId != null && { supplierId: params.supplierId }),
+          ...(params.from != null && { from: params.from }),
+          ...(params.to != null && { to: params.to }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Purchase', 'Calendar'],

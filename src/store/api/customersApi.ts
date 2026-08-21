@@ -25,7 +25,12 @@ export const customersApi = baseApi.injectEndpoints({
     getCustomers: builder.query<PaginatedResponse<ApiCustomer>, { page?: number; limit?: number; search?: string; type?: string }>({
       query: (params) => ({
         url: '/customers',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.search != null && { search: params.search }),
+          ...(params.type != null && { type: params.type }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Customer'],

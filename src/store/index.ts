@@ -1,4 +1,4 @@
-import { configureStore, isAnyOf } from '@reduxjs/toolkit';
+import { configureStore, isAnyOf, Middleware, MiddlewareAPI } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { baseApi } from './baseApi';
 import authReducer, { logout } from './authSlice';
@@ -16,7 +16,7 @@ export const makeStore = () => {
         serializableCheck: false,
       })
         .concat(baseApi.middleware)
-        .concat((api) => (next) => (action) => {
+        .concat((api: MiddlewareAPI) => (next: (action: unknown) => unknown) => (action: unknown) => {
           // Process the action first so the reducer updates state
           const result = next(action);
           // Then invalidate tags so the refetch reads the NEW calendar value

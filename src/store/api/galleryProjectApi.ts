@@ -14,7 +14,13 @@ export const galleryProjectApi = baseApi.injectEndpoints({
     getGalleryProjects: builder.query<PaginatedResponse<GalleryProject>, GalleryProjectFilters>({
       query: (params) => ({
         url: '/admin/gallery-project',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.projectId != null && { projectId: params.projectId }),
+          ...(params.division != null && { division: params.division }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Gallery'],

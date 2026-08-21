@@ -13,7 +13,11 @@ export const suppliersApi = baseApi.injectEndpoints({
     getSuppliers: builder.query<PaginatedResponse<ApiSupplier>, { page?: number; limit?: number; search?: string }>({
       query: (params) => ({
         url: '/suppliers',
-        params,
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+          ...(params.search != null && { search: params.search }),
+        },
       }),
       transformResponse: transformPaginatedResponse,
       providesTags: ['Supplier'],
