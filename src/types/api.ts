@@ -1064,7 +1064,7 @@ export interface TaxReportQuery {
 export interface TaxReportResponse {
   period: { type: string; from: string; to: string; label: string };
   purchases: { totalBeforeVat: number; totalVat: number; totalWithholding: number; count: number };
-  workProjects: { totalBeforeVat: number; totalVat: number; count: number };
+  workProjects: { totalBeforeVat: number; totalVat: number; count: number; message?: string | null };
   vatSummary: {
     outputVat: number;
     inputVat: number;
@@ -1074,7 +1074,7 @@ export interface TaxReportResponse {
   withholdingSummary: { totalWithheld: number };
   breakdown: {
     purchases: Array<{ id: string; supplierName: string | null; fsNumber: string; purchaseDate: string; amountBeforeVat: string; vatAmount: string; withholdingAmount: string; totalAmount: string }>;
-    workProjects: Array<{ id: string; projectName: string; clientName: string | null; projectDate: string; priceBeforeVat: string; vatAmount: string; totalPrice: string }>;
+    workProjects: Array<{ id: string; projectName: string; clientName: string | null; paidAt: string; priceBeforeVat: string; vatAmount: string; totalPrice: string }>;
   };
 }
 

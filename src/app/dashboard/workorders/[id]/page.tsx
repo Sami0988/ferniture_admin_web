@@ -54,7 +54,11 @@ export default function ProjectDetailPage() {
 
   const project = projectData?.data;
   const statusHistory = Array.isArray(historyData?.data) ? historyData!.data : [];
-  const assignees = Array.isArray(assigneesData?.data) ? assigneesData!.data : [];
+  const assignees = Array.isArray(assigneesData?.data)
+    ? assigneesData!.data.filter(
+        (a, i, arr) => a.id && arr.findIndex((x) => x.id === a.id) === i,
+      )
+    : [];
   const employees = Array.isArray(employeesData?.data) ? employeesData!.data : [];
   const paymentSummary = paymentData?.data;
 

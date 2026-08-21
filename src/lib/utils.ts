@@ -19,15 +19,54 @@ export function formatCurrency(amount: number | string): string {
   }).format(num)}`;
 }
 
+const EC_MONTHS = [
+  'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Tir', 'Yekatit',
+  'Megabit', 'Miyazya', 'Ginbot', 'Sene', 'Hamle', 'Nehase', 'Pagume',
+];
+
 function formatEcDate(dateStr: string): string {
-  return dateStr;
+  if (!dateStr) return '';
+  const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const day = Number(ddmmyyyy[1]);
+    const month = Number(ddmmyyyy[2]);
+    const year = Number(ddmmyyyy[3]);
+    return `${EC_MONTHS[month - 1]} ${day} ${year}`;
+  }
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const gy = date.getFullYear();
+  const gm = date.getMonth() + 1;
+  const gd = date.getDate();
+  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
+  if (isLeap) monthLengths[2] = 29;
+  let dayOfYear = gd;
+  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
+  const ethNewYearDay = isLeap ? 255 : 254;
+  let ethYear: number;
+  let ethDayOfYear: number;
+  if (dayOfYear >= ethNewYearDay) {
+    ethYear = gy - 7;
+    ethDayOfYear = dayOfYear - ethNewYearDay;
+  } else {
+    ethYear = gy - 8;
+    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
+    const prevYearDays = prevLeap ? 366 : 365;
+    const prevEthNewYearDay = prevLeap ? 255 : 254;
+    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
+  }
+  return `${EC_MONTHS[Math.floor(ethDayOfYear / 30)]} ${(ethDayOfYear % 30) + 1} ${ethYear}`;
 }
 
 export function formatDate(date: string): string {
   if (getCalendarFromStorage() === 'ec') {
     return formatEcDate(date);
   }
-  return new Date(date).toLocaleDateString('en-US', {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return date;
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -38,7 +77,10 @@ export function formatDateTime(date: string): string {
   if (getCalendarFromStorage() === 'ec') {
     return formatEcDate(date);
   }
-  return new Date(date).toLocaleDateString('en-US', {
+  if (!date) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return date;
+  return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

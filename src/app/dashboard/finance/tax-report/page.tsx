@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetTaxReportQuery, useLazyExportTaxReportQuery } from '@/store/api/taxReportApi';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
+import { useUI } from '@/hooks/useStore';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Skeleton from '@/components/ui/Skeleton';
@@ -23,6 +24,7 @@ const periods: { value: ReportPeriod; label: string }[] = [
 
 export default function TaxReportPage() {
   const router = useRouter();
+  const { calendar } = useUI();
   const [triggerExport] = useLazyExportTaxReportQuery();
   const [activePeriod, setActivePeriod] = useState<ReportPeriod>('month');
   const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -137,12 +139,17 @@ export default function TaxReportPage() {
       {activePeriod !== 'custom' && (
         <div className="flex items-center gap-3">
           <label className="text-sm text-muted">Reference Date</label>
-          <input
-            type="date"
-            value={referenceDate}
-            onChange={(e) => setReferenceDate(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-          />
+          <div>
+            <input
+              type="date"
+              value={referenceDate}
+              onChange={(e) => setReferenceDate(e.target.value)}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            />
+            {calendar === 'ec' && (
+              <p className="text-xs text-brand-gold mt-1">{formatDate(referenceDate)}</p>
+            )}
+          </div>
         </div>
       )}
 
@@ -150,21 +157,31 @@ export default function TaxReportPage() {
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted">From</label>
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-            />
+            <div>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              />
+              {calendar === 'ec' && (
+                <p className="text-xs text-brand-gold mt-1">{formatDate(customFrom)}</p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted">To</label>
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
-            />
+            <div>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              />
+              {calendar === 'ec' && (
+                <p className="text-xs text-brand-gold mt-1">{formatDate(customTo)}</p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -250,7 +267,7 @@ export default function TaxReportPage() {
           {(report.breakdown?.purchases?.length ?? 0) === 0 && (report.breakdown?.workProjects?.length ?? 0) === 0 && (
             <Card>
               <div className="py-12 text-center text-sm text-muted">
-                No purchases or projects recorded in this period.
+                {report.workProjects?.message || 'No purchases or projects recorded in this period.'}
               </div>
             </Card>
           )}
@@ -324,7 +341,7 @@ export default function TaxReportPage() {
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
                           onClick={() => router.push(`/dashboard/workorders/${item.id}`)}
                         >
-                          <td className="py-3 text-sm text-muted">{formatDate(item.projectDate)}</td>
+                          <td className="py-3 text-sm text-muted">{formatDate(item.paidAt)}</td>
                           <td className="py-3 text-sm font-medium text-foreground">{item.projectName}</td>
                           <td className="py-3 text-sm text-muted">{item.clientName || '—'}</td>
                           <td className="py-3 text-sm text-right">{formatCurrency(item.priceBeforeVat)}</td>
@@ -335,6 +352,18 @@ export default function TaxReportPage() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            </Card>
+          )}
+
+          {report.workProjects?.count === 0 && report.workProjects?.message && (report.breakdown?.purchases?.length ?? 0) > 0 && (
+            <Card>
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Building2 className="h-4 w-4 text-muted" />
+                  Work Projects in Period (0)
+                </div>
+                <p className="text-sm text-muted">{report.workProjects.message}</p>
               </div>
             </Card>
           )}

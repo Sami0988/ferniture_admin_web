@@ -21,12 +21,12 @@ export const invoicesApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['Invoice'],
+      providesTags: ['Invoice', 'Calendar'],
     }),
 
     getInvoiceById: builder.query<ApiResponse<ApiInvoice>, string>({
-      query: (id) => `/invoices/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Invoice', id }],
+      query: (id) => ({ url: `/invoices/${id}` }),
+      providesTags: (_result, _error, id) => [{ type: 'Invoice', id }, 'Calendar'],
     }),
 
     createInvoice: builder.mutation<ApiResponse<ApiInvoice>, CreateInvoiceRequest>({
@@ -81,7 +81,7 @@ export const invoicesApi = baseApi.injectEndpoints({
     }),
 
     getInvoicePdf: builder.query<ApiResponse<{ pdfUrl: string }>, string>({
-      query: (id) => `/invoices/${id}/pdf`,
+      query: (id) => ({ url: `/invoices/${id}/pdf` }),
     }),
 
     deleteInvoice: builder.mutation<void, string>({

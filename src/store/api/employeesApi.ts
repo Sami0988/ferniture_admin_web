@@ -18,12 +18,12 @@ export const employeesApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['Employee'],
+      providesTags: ['Employee', 'Calendar'],
     }),
 
     getEmployeeById: builder.query<ApiResponse<ApiEmployee>, string>({
-      query: (id) => `/employees/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Employee', id }],
+      query: (id) => ({ url: `/employees/${id}` }),
+      providesTags: (_result, _error, id) => [{ type: 'Employee', id }, 'Calendar'],
     }),
 
     createEmployee: builder.mutation<ApiResponse<ApiEmployee>, CreateEmployeeRequest>({
@@ -61,12 +61,12 @@ export const employeesApi = baseApi.injectEndpoints({
     }),
 
     getEmployeeProjects: builder.query<ApiResponse<ApiProject[]>, string>({
-      query: (id) => `/employees/${id}/projects`,
+      query: (id) => ({ url: `/employees/${id}/projects` }),
       providesTags: ['Project'],
     }),
 
     getEmployeeWorkload: builder.query<ApiResponse<EmployeeWorkload>, string>({
-      query: (id) => `/employees/${id}/workload`,
+      query: (id) => ({ url: `/employees/${id}/workload` }),
     }),
 
     deleteEmployee: builder.mutation<void, string>({

@@ -10,14 +10,14 @@ export const auditLogsApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['AuditLog'],
+      providesTags: ['AuditLog', 'Calendar'],
     }),
 
     getAuditLogsByEntity: builder.query<ApiResponse<AuditLog[]>, { entityType: string; entityId: string }>({
       query: ({ entityType, entityId }) => ({
         url: `/audit-logs/${entityType}/${entityId}`,
       }),
-      providesTags: ['AuditLog'],
+      providesTags: ['AuditLog', 'Calendar'],
     }),
   }),
 });

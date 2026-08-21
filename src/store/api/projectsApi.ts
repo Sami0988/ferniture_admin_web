@@ -25,12 +25,12 @@ export const projectsApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['Project'],
+      providesTags: ['Project', 'Calendar'],
     }),
 
     getProjectById: builder.query<ApiResponse<ApiProject>, string>({
-      query: (id) => `/projects/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Project', id }],
+      query: (id) => ({ url: `/projects/${id}` }),
+      providesTags: (_result, _error, id) => [{ type: 'Project', id }, 'Calendar'],
     }),
 
     createProject: builder.mutation<ApiResponse<ApiProject>, CreateProjectRequest>({
@@ -61,12 +61,12 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     getStatusHistory: builder.query<ApiResponse<ProjectStatusHistory[]>, string>({
-      query: (id) => `/projects/${id}/status-history`,
+      query: (id) => ({ url: `/projects/${id}/status-history` }),
       providesTags: (_result, _error, id) => [{ type: 'Project', id }],
     }),
 
     getProjectAssignees: builder.query<ApiResponse<ProjectAssignee[]>, string>({
-      query: (id) => `/projects/${id}/assignees`,
+      query: (id) => ({ url: `/projects/${id}/assignees` }),
       providesTags: (_result, _error, id) => [{ type: 'Project', id }],
     }),
 
@@ -87,7 +87,7 @@ export const projectsApi = baseApi.injectEndpoints({
     }),
 
     getProjectPayments: builder.query<ApiResponse<ProjectPaymentSummary>, string>({
-      query: (id) => `/projects/${id}/payments`,
+      query: (id) => ({ url: `/projects/${id}/payments` }),
       providesTags: (_result, _error, id) => [{ type: 'Project', id }],
     }),
 
@@ -102,7 +102,7 @@ export const projectsApi = baseApi.injectEndpoints({
 
     // Attachments
     getAttachments: builder.query<ApiResponse<ProjectAttachment[]>, string>({
-      query: (projectId) => `/projects/${projectId}/attachments`,
+      query: (projectId) => ({ url: `/projects/${projectId}/attachments` }),
       providesTags: (_result, _error, projectId) => [{ type: 'Project', id: projectId }],
     }),
 

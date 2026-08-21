@@ -1,7 +1,8 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store';
-import { toggleSidebar, toggleDarkMode, setActiveView } from '@/store/uiSlice';
+import { toggleSidebar, toggleDarkMode, toggleCalendar, setActiveView } from '@/store/uiSlice';
+import type { CalendarType } from '@/store/uiSlice';
 import { logout as authLogout, setCredentials, setUser, setMfaEnabled } from '@/store/authSlice';
 
 // UI hooks
@@ -10,13 +11,16 @@ export const useUI = () => {
   const sidebarCollapsed = useAppSelector((s) => s.ui.sidebarCollapsed);
   const activeView = useAppSelector((s) => s.ui.activeView);
   const darkMode = useAppSelector((s) => s.ui.darkMode);
+  const calendar = useAppSelector((s) => s.ui.calendar);
 
   return {
     sidebarCollapsed,
     activeView,
     darkMode,
+    calendar,
     toggleSidebar: () => dispatch(toggleSidebar()),
     toggleDarkMode: () => dispatch(toggleDarkMode()),
+    toggleCalendar: () => dispatch(toggleCalendar()),
     setActiveView: (view: 'list' | 'kanban') => dispatch(setActiveView(view)),
   };
 };

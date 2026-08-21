@@ -17,12 +17,12 @@ export const purchasesApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['Purchase'],
+      providesTags: ['Purchase', 'Calendar'],
     }),
 
     getPurchaseById: builder.query<ApiResponse<ApiPurchaseDetail>, string>({
-      query: (id) => `/purchases/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Purchase', id }],
+      query: (id) => ({ url: `/purchases/${id}` }),
+      providesTags: (_result, _error, id) => [{ type: 'Purchase', id }, 'Calendar'],
     }),
 
     createPurchase: builder.mutation<ApiResponse<ApiPurchase>, CreatePurchaseRequest>({

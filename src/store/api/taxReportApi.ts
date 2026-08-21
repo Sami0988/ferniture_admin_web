@@ -10,6 +10,7 @@ export const taxReportApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: (response: any) => response?.data ?? response,
+      providesTags: ['Calendar'],
     }),
     exportTaxReport: builder.query<Blob, { params: Record<string, string> }>({
       query: ({ params }) => ({

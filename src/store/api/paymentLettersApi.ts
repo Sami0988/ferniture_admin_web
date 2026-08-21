@@ -17,12 +17,12 @@ export const paymentLettersApi = baseApi.injectEndpoints({
         params,
       }),
       transformResponse: transformPaginatedResponse,
-      providesTags: ['PaymentLetter'],
+      providesTags: ['PaymentLetter', 'Calendar'],
     }),
 
     getPaymentLetterById: builder.query<ApiResponse<ApiPaymentLetter>, string>({
-      query: (id) => `/payment-letters/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'PaymentLetter', id }],
+      query: (id) => ({ url: `/payment-letters/${id}` }),
+      providesTags: (_result, _error, id) => [{ type: 'PaymentLetter', id }, 'Calendar'],
     }),
 
     createPaymentLetter: builder.mutation<ApiResponse<ApiPaymentLetter>, CreatePaymentLetterRequest>({

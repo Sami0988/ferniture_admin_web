@@ -12,8 +12,8 @@ import type {
 export const reportsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getDashboardReport: builder.query<ApiResponse<DashboardReport>, void>({
-      query: () => '/reports/dashboard',
-      providesTags: ['DashboardReport'],
+      query: () => ({ url: '/reports/dashboard' }),
+      providesTags: ['DashboardReport', 'Calendar'],
     }),
 
     getProjectReport: builder.query<ApiResponse<ProjectReport>, { startDate?: string; endDate?: string }>({
@@ -21,6 +21,7 @@ export const reportsApi = baseApi.injectEndpoints({
         url: '/reports/projects',
         params,
       }),
+      providesTags: ['Calendar'],
     }),
 
     getRevenueReport: builder.query<ApiResponse<RevenueReport>, { startDate?: string; endDate?: string }>({
@@ -28,14 +29,17 @@ export const reportsApi = baseApi.injectEndpoints({
         url: '/reports/revenue',
         params,
       }),
+      providesTags: ['Calendar'],
     }),
 
     getCustomerReport: builder.query<ApiResponse<CustomerReport>, void>({
-      query: () => '/reports/customers',
+      query: () => ({ url: '/reports/customers' }),
+      providesTags: ['Calendar'],
     }),
 
     getOverdueReport: builder.query<ApiResponse<OverdueReport>, void>({
-      query: () => '/reports/overdue',
+      query: () => ({ url: '/reports/overdue' }),
+      providesTags: ['Calendar'],
     }),
 
     getEmployeePerformanceReport: builder.query<ApiResponse<EmployeePerformanceReport[]>, { startDate?: string; endDate?: string }>({
@@ -43,6 +47,7 @@ export const reportsApi = baseApi.injectEndpoints({
         url: '/reports/employee-performance',
         params,
       }),
+      providesTags: ['Calendar'],
     }),
   }),
 });

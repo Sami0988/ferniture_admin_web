@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, Moon, Sun, PanelLeftClose, PanelLeft, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Bell, Moon, Sun, PanelLeftClose, PanelLeft, LogOut, ChevronDown, Calendar } from 'lucide-react';
 import { useUI, useAuth } from '@/hooks/useStore';
 import { useGetUnreadCountQuery } from '@/store/api/notificationsApi';
 import { useLogoutMutation } from '@/store/api/authApi';
@@ -14,7 +14,7 @@ import GlobalSearch from '@/components/layout/GlobalSearch';
 export default function TopBar() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode } = useUI();
+  const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode, calendar, toggleCalendar } = useUI();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -95,8 +95,18 @@ export default function TopBar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right side: Dark mode | Notifications | Profile */}
+      {/* Right side: Calendar | Dark mode | Notifications | Profile */}
       <div className="flex items-center gap-1">
+        {/* Calendar toggle */}
+        <button
+          onClick={toggleCalendar}
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+          title={calendar === 'ec' ? 'Switch to Gregorian Calendar' : 'Switch to Ethiopian Calendar'}
+        >
+          <Calendar className="h-4 w-4" />
+          <span className="hidden sm:inline">{calendar === 'ec' ? 'EC' : 'GC'}</span>
+        </button>
+
         {/* Dark mode toggle */}
         <button
           onClick={toggleDarkMode}

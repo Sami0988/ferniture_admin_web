@@ -181,7 +181,7 @@ export default function PurchaseRecordsPage() {
   const lineTotal = (item: CreatePurchaseItemInput) => item.quantity * item.unitPrice;
   const sumBeforeVat = formItems.reduce((sum, item) => sum + lineTotal(item), 0);
   const estVat = sumBeforeVat * 0.15;
-  const estWithholding = sumBeforeVat > 10000 ? sumBeforeVat * 0.02 : 0;
+  const estWithholding = sumBeforeVat > 10000 ? sumBeforeVat * 0.03 : 0;
   const estTotal = sumBeforeVat + estVat - estWithholding;
 
   const onSubmit = async (data: PurchaseFormData) => {
@@ -467,7 +467,7 @@ export default function PurchaseRecordsPage() {
             <p className="text-xs text-muted font-medium uppercase tracking-wider">Estimated Summary (preview only)</p>
             <div className="flex justify-between text-sm"><span className="text-muted">Amount Before VAT</span><span className="font-medium">{formatCurrency(sumBeforeVat)}</span></div>
             <div className="flex justify-between text-sm"><span className="text-muted">Est. VAT (15%)</span><span className="font-medium">{formatCurrency(estVat)}</span></div>
-            <div className="flex justify-between text-sm"><span className="text-muted">Est. Withholding (2%)</span><span className="font-medium">{formatCurrency(estWithholding)}</span></div>
+            <div className="flex justify-between text-sm"><span className="text-muted">Est. Withholding (3%)</span><span className="font-medium">{formatCurrency(estWithholding)}</span></div>
             <div className="flex justify-between text-sm border-t border-border pt-2"><span className="text-foreground font-medium">Est. Total</span><span className="font-bold">{formatCurrency(estTotal)}</span></div>
             <p className="text-[10px] text-muted italic">Final values are calculated on the server</p>
           </div>

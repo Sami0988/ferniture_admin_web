@@ -5,6 +5,13 @@ import { refreshAuth } from './refreshAuth';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
 
+function getCalendarValue(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return localStorage.getItem('kw_calendar') || '';
+  } catch { return ''; }
+}
+
 const baseQuery = fetchBaseQuery({
   baseUrl: BASE_URL,
   credentials: 'include',
@@ -29,11 +36,21 @@ function redirectToLogin() {
 }
 
 const baseQueryWithReauth = async (
-  args: string | { url: string; method?: string; body?: unknown; headers?: Record<string, string> },
+  args: string | { url: string; method?: string; body?: unknown; headers?: Record<string, string>; params?: Record<string, string> },
   api: Parameters<typeof baseQuery>[1],
   extraOptions: Parameters<typeof baseQuery>[2]
 ) => {
-  const result = await baseQuery(args, api, extraOptions);
+  // Inject calendar param when user preference is set
+  const cal = getCalendarValue();
+  let modifiedArgs = args;
+  if (cal === 'ec' && typeof args !== 'string') {
+    modifiedArgs = {
+      ...args,
+      params: { ...args.params, calendar: 'ec' },
+    };
+  }
+
+  const result = await baseQuery(modifiedArgs, api, extraOptions);
 
   // Handle 429 Rate Limit
   if (result.error && result.error.status === 429) {
@@ -111,6 +128,7 @@ export const baseApi = createApi({
     'LetterTemplate',
     'Supplier',
     'Purchase',
+    'Calendar',
   ],
   endpoints: () => ({}),
 });
