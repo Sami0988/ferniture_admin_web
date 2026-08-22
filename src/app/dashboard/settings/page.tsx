@@ -137,8 +137,12 @@ export default function SettingsPage() {
     if (!file) return;
     try {
       const result = await uploadImage(file).unwrap();
-      setCompanyForm({ ...companyForm, logo: result.data.url });
-      toast.success('Logo uploaded');
+      const logoUrl = result.data.url;
+      setCompanyForm((prev) => ({ ...prev, logo: logoUrl }));
+      await updateSettings({
+        settings: { company_logo: logoUrl },
+      }).unwrap();
+      toast.success('Logo uploaded and saved');
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to upload logo';
       toast.error(message);
