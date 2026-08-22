@@ -25,6 +25,17 @@ interface AuthState {
 
 const REFRESH_TOKEN_KEY = 'kw_refresh_token';
 
+function setCookie(name: string, value: string, days: number) {
+  if (typeof window === 'undefined') return;
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
+function removeCookie(name: string) {
+  if (typeof window === 'undefined') return;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+}
+
 function persistRefreshToken(token: string | null) {
   if (typeof window === 'undefined') return;
   if (token) {
@@ -79,6 +90,8 @@ const authSlice = createSlice({
       state.refreshToken = action.payload.tokens.refreshToken;
       state.isAuthenticated = true;
       persistRefreshToken(action.payload.tokens.refreshToken);
+      setCookie('accessToken', action.payload.tokens.accessToken, 7);
+      setCookie('refreshToken', action.payload.tokens.refreshToken, 7);
       if (action.payload.mfaEnabled !== undefined) {
         state.mfaEnabled = action.payload.mfaEnabled;
       }
@@ -87,6 +100,8 @@ const authSlice = createSlice({
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
       persistRefreshToken(action.payload.refreshToken);
+      setCookie('accessToken', action.payload.accessToken, 7);
+      setCookie('refreshToken', action.payload.refreshToken, 7);
     },
     setUser: (state, action: PayloadAction<AuthState['user']>) => {
       state.user = action.payload;
@@ -105,6 +120,8 @@ const authSlice = createSlice({
       state.mfaEnabled = false;
       state.rateLimitError = null;
       persistRefreshToken(null);
+      removeCookie('accessToken');
+      removeCookie('refreshToken');
       broadcastLogout();
     },
   },
