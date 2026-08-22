@@ -24,6 +24,8 @@ interface AuthState {
 }
 
 const REFRESH_TOKEN_KEY = 'kw_refresh_token';
+const ACCESS_TOKEN_KEY = 'kw_access_token';
+const USER_KEY = 'kw_user';
 
 function setCookie(name: string, value: string, days: number) {
   if (typeof window === 'undefined') return;
@@ -36,18 +38,43 @@ function removeCookie(name: string) {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
 }
 
-function persistRefreshToken(token: string | null) {
+function persistTokens(accessToken: string | null, refreshToken: string | null, user: AuthState['user'] | null) {
   if (typeof window === 'undefined') return;
-  if (token) {
-    sessionStorage.setItem(REFRESH_TOKEN_KEY, token);
+  if (accessToken) {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  } else {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+  if (refreshToken) {
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
   } else {
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
   }
+  if (user) {
+    sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  } else {
+    sessionStorage.removeItem(USER_KEY);
+  }
+}
+
+export function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
 
 export function getStoredRefreshToken(): string | null {
   if (typeof window === 'undefined') return null;
   return sessionStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function getStoredUser(): AuthState['user'] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 // Cross-tab logout broadcast
@@ -89,7 +116,7 @@ const authSlice = createSlice({
       state.accessToken = action.payload.tokens.accessToken;
       state.refreshToken = action.payload.tokens.refreshToken;
       state.isAuthenticated = true;
-      persistRefreshToken(action.payload.tokens.refreshToken);
+      persistTokens(action.payload.tokens.accessToken, action.payload.tokens.refreshToken, action.payload.user);
       setCookie('accessToken', action.payload.tokens.accessToken, 7);
       setCookie('refreshToken', action.payload.tokens.refreshToken, 7);
       if (action.payload.mfaEnabled !== undefined) {
@@ -99,7 +126,7 @@ const authSlice = createSlice({
     setTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
       state.accessToken = action.payload.accessToken;
       state.refreshToken = action.payload.refreshToken;
-      persistRefreshToken(action.payload.refreshToken);
+      persistTokens(action.payload.accessToken, action.payload.refreshToken, state.user);
       setCookie('accessToken', action.payload.accessToken, 7);
       setCookie('refreshToken', action.payload.refreshToken, 7);
     },
@@ -119,7 +146,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.mfaEnabled = false;
       state.rateLimitError = null;
-      persistRefreshToken(null);
+      persistTokens(null, null, null);
       removeCookie('accessToken');
       removeCookie('refreshToken');
       broadcastLogout();

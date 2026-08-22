@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials } from '@/store/authSlice';
-import { getStoredRefreshToken } from '@/store/authSlice';
+import { getStoredAccessToken, getStoredRefreshToken, getStoredUser } from '@/store/authSlice';
 import { refreshAuth, resetRefreshState } from '@/store/refreshAuth';
 
 export default function TokenRefreshProvider({ children }: { children: React.ReactNode }) {
@@ -26,11 +26,32 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
 
     let cancelled = false;
 
-    refreshAuth(getStoredRefreshToken()).then(async (tokens) => {
+    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+
+    const restoreSession = async () => {
+      const storedAccessToken = getStoredAccessToken();
+      const storedUser = getStoredUser();
+      const storedRefreshToken = getStoredRefreshToken();
+
+      if (storedAccessToken && storedUser) {
+        dispatch(setCredentials({
+          user: storedUser,
+          tokens: { accessToken: storedAccessToken, refreshToken: storedRefreshToken || '' },
+        }));
+        if (!cancelled && mountedRef.current) setIsRestoring(false);
+        return;
+      }
+
+      if (!storedRefreshToken) {
+        if (!cancelled && mountedRef.current) setIsRestoring(false);
+        return;
+      }
+
+      const tokens = await refreshAuth(storedRefreshToken);
       if (cancelled || !mountedRef.current) return;
+
       if (tokens) {
         try {
-          const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
           const userRes = await fetch(`${BASE_URL}/users/me`, {
             credentials: 'include',
             headers: { Authorization: `Bearer ${tokens.accessToken}` },
@@ -58,7 +79,9 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
       if (!cancelled && mountedRef.current) {
         setIsRestoring(false);
       }
-    });
+    };
+
+    restoreSession();
 
     return () => { cancelled = true; };
   }, [isAuthenticated, dispatch]);
