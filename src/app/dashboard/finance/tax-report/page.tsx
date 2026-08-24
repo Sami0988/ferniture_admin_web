@@ -68,7 +68,12 @@ function getCurrentFiscalMonth(): number {
     ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
   }
   const ethMonth = Math.floor(ethDayOfYear / 30);
-  const fiscalMonthIndex = (ethMonth + 2) % 13;
+  let fiscalMonthIndex: number;
+  if (ethMonth >= 10) {
+    fiscalMonthIndex = ethMonth === 10 ? 0 : 1;
+  } else {
+    fiscalMonthIndex = ethMonth + 2;
+  }
   return fiscalMonthIndex + 1;
 }
 

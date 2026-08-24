@@ -74,6 +74,11 @@ function formatEcDate(dateStr: string): string {
   return `${EC_MONTHS[monthIndex]} ${day} ${ethYear}`;
 }
 
+function ecMonthToFiscal(ecMonthIndex: number): number {
+  if (ecMonthIndex >= 10) return ecMonthIndex === 10 ? 0 : 1;
+  return ecMonthIndex + 2;
+}
+
 function formatEcFiscalDate(dateStr: string): string {
   if (!dateStr) return '';
   const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -81,13 +86,15 @@ function formatEcFiscalDate(dateStr: string): string {
     const day = Number(ddmmyyyy[1]);
     const month = Number(ddmmyyyy[2]);
     const year = Number(ddmmyyyy[3]);
-    const fiscalMonth = ((month - 7 + 12) % 12);
-    const fyStart = month >= 7 ? year : year - 1;
+    const ecMonthIndex = month - 1;
+    const fiscalMonthIndex = ecMonthToFiscal(ecMonthIndex);
+    const fyStart = ecMonthIndex >= 10 ? year : year - 1;
     const fyEnd = fyStart + 1;
-    if (fiscalMonth === 1) {
-      return `Nehase–Pagume ${day < 31 ? `Nehase ${day}` : `Pagume ${day - 30}`}, ${fyStart}/${fyEnd}`;
+    if (fiscalMonthIndex === 1) {
+      const monthName = ecMonthIndex === 12 ? 'Pagume' : 'Nehase';
+      return `Nehase–Pagume ${monthName} ${day}, ${fyStart}/${fyEnd}`;
     }
-    return `${EC_FISCAL_MONTHS[fiscalMonth]} ${day}, ${fyStart}/${fyEnd}`;
+    return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${day}, ${fyStart}/${fyEnd}`;
   }
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
@@ -113,14 +120,13 @@ function formatEcFiscalDate(dateStr: string): string {
     ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
   }
   const { monthIndex, day } = ethMonthDay(ethDayOfYear);
-  const fiscalMonthIndex = (monthIndex + 2) % 13;
-  const fyStart = ethYear - 1;
-  const fyEnd = ethYear;
+  const fiscalMonthIndex = ecMonthToFiscal(monthIndex);
+  const fyStart = monthIndex >= 10 ? ethYear : ethYear - 1;
+  const fyEnd = fyStart + 1;
   if (fiscalMonthIndex === 1) {
-    const subDay = day;
-    return `Nehase–Pagume ${subDay < 31 ? `Nehase ${subDay}` : `Pagume ${subDay - 30}`}, ${fyStart}/${fyEnd}`;
+    const monthName = monthIndex === 12 ? 'Pagume' : 'Nehase';
+    return `Nehase–Pagume ${monthName} ${day}, ${fyStart}/${fyEnd}`;
   }
-  const adjustedIndex = fiscalMonthIndex > 1 ? fiscalMonthIndex - 1 : fiscalMonthIndex;
   return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${day}, ${fyStart}/${fyEnd}`;
 }
 
