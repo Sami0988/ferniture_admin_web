@@ -80,7 +80,6 @@ export default function ProjectDetailPage() {
     recipientAddress: '',
     subject: '',
     body: '',
-    referenceNumber: '',
     dueDate: '',
   });
 
@@ -207,7 +206,6 @@ export default function ProjectDetailPage() {
         recipientAddress: selectedTemplate.recipientAddress || prev.recipientAddress,
         subject: selectedTemplate.subject || prev.subject,
         body,
-        referenceNumber: selectedTemplate.referenceNumber || prev.referenceNumber,
         dueDate: selectedTemplate.dueDate || prev.dueDate,
       }));
       setHasExtracted(true);
@@ -237,12 +235,11 @@ export default function ProjectDetailPage() {
         recipientAddress: letterForm.recipientAddress || undefined,
         subject: letterForm.subject,
         body: letterForm.body,
-        referenceNumber: letterForm.referenceNumber || undefined,
         dueDate: letterForm.dueDate || undefined,
       }).unwrap();
       toast.success('Payment letter created');
       setLetterModalOpen(false);
-      setLetterForm({ templateId: '', recipientCompanyName: '', recipientTitle: '', recipientAddress: '', subject: '', body: '', referenceNumber: '', dueDate: '' });
+      setLetterForm({ templateId: '', recipientCompanyName: '', recipientTitle: '', recipientAddress: '', subject: '', body: '', dueDate: '' });
       router.push(`/dashboard/payment-letters/${result.data.id}`);
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to create letter';
@@ -296,7 +293,6 @@ export default function ProjectDetailPage() {
               recipientAddress: project.customer?.address || '',
               subject: `Request for Payment for ${project.title}`,
               body: `We are writing to formally request payment for the ${project.title} work recently completed.\n\nThe project was executed as per the agreed specifications and has been completed to the best of our ability, ensuring it meets your satisfaction.`,
-              referenceNumber: '',
               dueDate: '',
             });
             setLetterModalOpen(true);
@@ -810,17 +806,6 @@ export default function ProjectDetailPage() {
             <p className="text-[10px] text-muted">Use blank lines to separate paragraphs</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-foreground">Reference Number</label>
-              <input
-                type="text"
-                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-                value={letterForm.referenceNumber}
-                onChange={(e) => setLetterForm({ ...letterForm, referenceNumber: e.target.value })}
-                placeholder="e.g. AWB/PROC/2026/001"
-                maxLength={100}
-              />
-            </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Due Date</label>
               <input

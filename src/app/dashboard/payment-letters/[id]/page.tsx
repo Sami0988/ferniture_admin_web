@@ -67,7 +67,6 @@ export default function PaymentLetterDetailPage() {
     recipientAddress: '',
     subject: '',
     body: '',
-    referenceNumber: '',
     dueDate: '',
   });
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -90,7 +89,6 @@ export default function PaymentLetterDetailPage() {
         recipientAddress: letter.recipientAddress || '',
         subject: letter.subject,
         body: letter.body,
-        referenceNumber: letter.referenceNumber || '',
         dueDate: letter.dueDate || '',
       });
     }
@@ -575,17 +573,6 @@ export default function PaymentLetterDetailPage() {
             <p className="text-[10px] text-muted">Use blank lines to separate paragraphs</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-foreground">Reference Number</label>
-              <input
-                type="text"
-                className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-                value={editForm.referenceNumber}
-                onChange={(e) => setEditForm({ ...editForm, referenceNumber: e.target.value })}
-                placeholder="e.g. AWB/PROC/2026/001"
-                maxLength={100}
-              />
-            </div>
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-foreground">Due Date</label>
               <input

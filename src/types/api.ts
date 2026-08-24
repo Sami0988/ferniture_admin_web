@@ -867,7 +867,6 @@ export interface CreateLetterTemplateRequest {
   recipientAddress?: string;
   subject?: string;
   body?: string;
-  referenceNumber?: string;
   dueDate?: string;
 }
 
@@ -881,7 +880,6 @@ export interface UpdateLetterTemplateRequest {
   recipientAddress?: string;
   subject?: string;
   body?: string;
-  referenceNumber?: string;
   dueDate?: string;
 }
 
@@ -923,7 +921,6 @@ export interface CreatePaymentLetterRequest {
   recipientAddress?: string;
   subject: string;
   body: string;
-  referenceNumber?: string;
   dueDate?: string;
 }
 
@@ -937,7 +934,6 @@ export interface UpdatePaymentLetterRequest {
   recipientAddress?: string;
   subject?: string;
   body?: string;
-  referenceNumber?: string;
   dueDate?: string;
 }
 

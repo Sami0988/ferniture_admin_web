@@ -25,7 +25,6 @@ const DEFAULT_FIELD_VALUES: Record<string, string> = {
   companyPhone: '+251911670799',
   companyEmail: 'kassahuntsegayeplc@gmail.com',
   signatoryName: 'Kassahun Tsegaye',
-  letterNumber: '',
   recipientCompanyName: '',
   recipientTitle: '',
   recipientAddress: '',
@@ -104,7 +103,7 @@ export default function LetterTemplateEditorPage() {
       setName(tpl.name);
       setDescription(tpl.description || '');
       // Load template fields if they exist
-      if (tpl.recipientCompanyName || tpl.recipientTitle || tpl.recipientAddress || tpl.subject || tpl.body || tpl.referenceNumber) {
+      if (tpl.recipientCompanyName || tpl.recipientTitle || tpl.recipientAddress || tpl.subject || tpl.body) {
         setFieldValues(prev => ({
           ...prev,
           recipientCompanyName: tpl.recipientCompanyName || prev.recipientCompanyName,
@@ -112,7 +111,6 @@ export default function LetterTemplateEditorPage() {
           recipientAddress: tpl.recipientAddress || prev.recipientAddress,
           subject: tpl.subject || prev.subject,
           body: tpl.body || prev.body,
-          letterNumber: tpl.referenceNumber || prev.letterNumber,
         }));
       }
       // Detect if it's a custom HTML or styled template based on content
@@ -163,7 +161,6 @@ export default function LetterTemplateEditorPage() {
         recipientAddress: fieldValues.recipientAddress || undefined,
         subject: fieldValues.subject || undefined,
         body: fieldValues.body || undefined,
-        referenceNumber: fieldValues.letterNumber || undefined,
         dueDate: undefined,
       };
       if (isNew) {
@@ -203,7 +200,7 @@ export default function LetterTemplateEditorPage() {
     preview = preview.replace('{{companyEmail}}', fieldValues.companyEmail || DEFAULT_FIELD_VALUES.companyEmail);
     preview = preview.replace('{{signatoryName}}', fieldValues.signatoryName || DEFAULT_FIELD_VALUES.signatoryName);
     preview = preview.replace('{{date}}', new Date().toLocaleDateString('en-GB'));
-    preview = preview.replace('{{letterNumber}}', fieldValues.letterNumber || '');
+    preview = preview.replace('{{letterNumber}}', 'REF-NUMBER');
     preview = preview.replace('{{recipientCompanyName}}', fieldValues.recipientCompanyName || '');
     preview = preview.replace('{{recipientTitle}}', fieldValues.recipientTitle || '');
     preview = preview.replace('{{recipientAddress}}', fieldValues.recipientAddress || '');

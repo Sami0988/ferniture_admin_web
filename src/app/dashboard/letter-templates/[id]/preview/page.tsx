@@ -15,7 +15,6 @@ const DEFAULT_FIELD_VALUES: Record<string, string> = {
   companyPhone: "+251911670799",
   companyEmail: "kassahuntsegayeplc@gmail.com",
   signatoryName: "Kassahun Tsegaye",
-  letterNumber: "",
   recipientCompanyName: "",
   recipientTitle: "",
   recipientAddress: "",
@@ -108,8 +107,8 @@ export default function LetterTemplatePreviewPage() {
       result = result.replace(/\{\{companyPhone\}\}/g, company.company_phone || DEFAULT_FIELD_VALUES.companyPhone);
       result = result.replace(/\{\{companyEmail\}\}/g, company.company_email || DEFAULT_FIELD_VALUES.companyEmail);
       result = result.replace(/\{\{signatoryName\}\}/g, company.signatory_name || DEFAULT_FIELD_VALUES.signatoryName);
-      result = result.replace(/\{\{letterNumber\}\}/g, tpl.referenceNumber || "");
-      result = result.replace(/\{\{referenceNumber\}\}/g, tpl.referenceNumber || "");
+      result = result.replace(/\{\{letterNumber\}\}/g, tpl.referenceNumber || "REF-NUMBER");
+      result = result.replace(/\{\{referenceNumber\}\}/g, tpl.referenceNumber || "REF-NUMBER");
       result = result.replace(/<branch>/gi, "___________________");
       result = result.replace(/<city>/gi, "___________________");
       result = result.replace(/<location>/gi, "___________________");

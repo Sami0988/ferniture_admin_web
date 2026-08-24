@@ -25,7 +25,6 @@ const TEMPLATE_FIELDS: TemplateField[] = [
   { key: 'companyPhone', label: 'Company Phone', placeholder: 'e.g. +251911670799', defaultValue: '+251911670799' },
   { key: 'companyEmail', label: 'Company Email', placeholder: 'e.g. info@company.com', defaultValue: 'kassahuntsegayeplc@gmail.com' },
   { key: 'signatoryName', label: 'Signatory Name', placeholder: 'e.g. Kassahun Tsegaye', defaultValue: 'Kassahun Tsegaye' },
-  { key: 'letterNumber', label: 'Letter Number', placeholder: 'e.g. PL-2026-0001', defaultValue: '' },
   { key: 'recipientCompanyName', label: 'Recipient Company', placeholder: 'e.g. Awash Bank', defaultValue: '' },
   { key: 'recipientTitle', label: 'Recipient Title/Dept', placeholder: 'e.g. Procurement Manager', defaultValue: '' },
   { key: 'recipientAddress', label: 'Recipient Address', placeholder: 'e.g. Addis Ababa, Ethiopia', defaultValue: '' },
