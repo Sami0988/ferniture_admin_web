@@ -512,7 +512,7 @@ export default function TaxReportPage() {
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
                           onClick={() => router.push(`/dashboard/purchases/records/${item.id}`)}
                         >
-                          <td className="py-3 text-sm text-muted">{formatDate(item.purchaseDate)}</td>
+                          <td className="py-3 text-sm text-muted">{formatDate(item.purchaseDateGC || item.purchaseDate)}</td>
                           <td className="py-3 text-sm font-medium text-foreground">{item.supplierName || '—'}</td>
                           <td className="py-3 text-sm text-muted font-mono">{item.fsNumber}</td>
                           <td className="py-3 text-sm text-right">{formatCurrency(item.amountBeforeVat)}</td>
@@ -554,7 +554,7 @@ export default function TaxReportPage() {
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
                           onClick={() => router.push(`/dashboard/workorders/${item.id}`)}
                         >
-                          <td className="py-3 text-sm text-muted">{formatDate(item.paidAt)}</td>
+                          <td className="py-3 text-sm text-muted">{formatDate(item.paidAtGC || item.paidAt)}</td>
                           <td className="py-3 text-sm font-medium text-foreground">{item.projectName}</td>
                           <td className="py-3 text-sm text-muted">{item.clientName || '—'}</td>
                           <td className="py-3 text-sm text-right">{formatCurrency(item.priceBeforeVat)}</td>
