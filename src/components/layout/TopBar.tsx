@@ -10,18 +10,27 @@ import { cancelRefresh } from '@/store/refreshAuth';
 import Avatar from '@/components/ui/Avatar';
 import NotificationPanel from '@/components/notifications/NotificationPanel';
 import GlobalSearch from '@/components/layout/GlobalSearch';
+import type { CalendarType } from '@/store/uiSlice';
+
+const calendarOptions: { value: CalendarType; shortLabel: string; fullLabel: string; tooltip: string }[] = [
+  { value: 'gc', shortLabel: 'GC', fullLabel: 'GC', tooltip: 'Switch to Gregorian Calendar' },
+  { value: 'ec', shortLabel: 'EC', fullLabel: 'EC (Calendar Year)', tooltip: 'Switch to Ethiopian Calendar (Calendar Year)' },
+  { value: 'ec-fiscal', shortLabel: 'EC-F', fullLabel: 'EC (Tax Year)', tooltip: 'Switch to Ethiopian Calendar (Tax Year)' },
+];
 
 export default function TopBar() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode, calendar, toggleCalendar } = useUI();
+  const { sidebarCollapsed, toggleSidebar, darkMode, toggleDarkMode, calendar, setCalendar } = useUI();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showCalendarMenu, setShowCalendarMenu] = useState(false);
   const { data: unreadData } = useGetUnreadCountQuery();
   const unreadCount = unreadData?.data?.count ?? 0;
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
   const [logoutApi] = useLogoutMutation();
 
   // Close panels on outside click
@@ -33,12 +42,15 @@ export default function TopBar() {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
         setShowProfile(false);
       }
+      if (calendarRef.current && !calendarRef.current.contains(e.target as Node)) {
+        setShowCalendarMenu(false);
+      }
     };
-    if (showNotifications || showProfile) {
+    if (showNotifications || showProfile || showCalendarMenu) {
       document.addEventListener('mousedown', handleClick);
     }
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [showNotifications, showProfile]);
+  }, [showNotifications, showProfile, showCalendarMenu]);
 
   // Global Ctrl+K / Cmd+K shortcut
   useEffect(() => {
@@ -98,14 +110,37 @@ export default function TopBar() {
       {/* Right side: Calendar | Dark mode | Notifications | Profile */}
       <div className="flex items-center gap-1">
         {/* Calendar toggle */}
-        <button
-          onClick={toggleCalendar}
-          className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-          title={calendar === 'ec' ? 'Switch to Gregorian Calendar' : 'Switch to Ethiopian Calendar'}
-        >
-          <Calendar className="h-4 w-4" />
-          <span className="hidden sm:inline">{calendar === 'ec' ? 'EC' : 'GC'}</span>
-        </button>
+        <div className="relative" ref={calendarRef}>
+          <button
+            onClick={() => setShowCalendarMenu(!showCalendarMenu)}
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            title={calendarOptions.find((o) => o.value === calendar)?.tooltip}
+          >
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">{calendarOptions.find((o) => o.value === calendar)?.shortLabel}</span>
+            <ChevronDown className="h-3 w-3 text-muted hidden sm:block" />
+          </button>
+          {showCalendarMenu && (
+            <div className="absolute right-0 top-full mt-2 w-56 rounded-xl border border-border bg-surface shadow-2xl z-50 py-1">
+              {calendarOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    setCalendar(opt.value);
+                    setShowCalendarMenu(false);
+                  }}
+                  className={`flex w-full items-center gap-2 px-3 py-2 text-sm transition-colors ${
+                    calendar === opt.value
+                      ? 'bg-brand-gold/10 text-brand-gold font-medium'
+                      : 'text-foreground hover:bg-surface-hover'
+                  }`}
+                >
+                  {opt.fullLabel}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Dark mode toggle */}
         <button

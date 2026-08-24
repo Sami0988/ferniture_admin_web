@@ -13,7 +13,7 @@ export default function StoreProvider({ children }: { children: React.ReactNode 
     // Hydrate calendar from localStorage synchronously before first render
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('kw_calendar') as CalendarType | null;
-      if (stored && stored !== storeRef.current.getState().ui.calendar) {
+      if (stored && ['gc', 'ec', 'ec-fiscal'].includes(stored) && stored !== storeRef.current.getState().ui.calendar) {
         storeRef.current.dispatch(setCalendar(stored));
       }
     }

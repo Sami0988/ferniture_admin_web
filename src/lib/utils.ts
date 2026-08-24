@@ -24,6 +24,40 @@ const EC_MONTHS = [
   'Megabit', 'Miyazya', 'Ginbot', 'Sene', 'Hamle', 'Nehase', 'Pagume',
 ];
 
+const EC_FISCAL_MONTHS = [
+  'Hamle', 'Nehase–Pagume', 'Meskerem', 'Tikimt', 'Hidar', 'Tahsas',
+  'Tir', 'Yekatit', 'Megabit', 'Miazia', 'Genbot', 'Sene',
+];
+
+function getEthDayOfYear(gy: number, gm: number, gd: number): { ethDayOfYear: number; ethYear: number } {
+  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
+  if (isLeap) monthLengths[2] = 29;
+  let dayOfYear = gd;
+  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
+  const ethNewYearDay = isLeap ? 255 : 254;
+  let ethYear: number;
+  let ethDayOfYear: number;
+  if (dayOfYear >= ethNewYearDay) {
+    ethYear = gy - 7;
+    ethDayOfYear = dayOfYear - ethNewYearDay;
+  } else {
+    ethYear = gy - 8;
+    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
+    const prevYearDays = prevLeap ? 366 : 365;
+    const prevEthNewYearDay = prevLeap ? 255 : 254;
+    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
+  }
+  return { ethDayOfYear, ethYear };
+}
+
+function ethMonthDay(ethDayOfYear: number): { monthIndex: number; day: number } {
+  if (ethDayOfYear >= 330) return { monthIndex: 12, day: ethDayOfYear - 330 + 1 };
+  const monthIndex = Math.floor(ethDayOfYear / 30);
+  const day = (ethDayOfYear % 30) + 1;
+  return { monthIndex, day };
+}
+
 function formatEcDate(dateStr: string): string {
   if (!dateStr) return '';
   const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
@@ -32,6 +66,28 @@ function formatEcDate(dateStr: string): string {
     const month = Number(ddmmyyyy[2]);
     const year = Number(ddmmyyyy[3]);
     return `${EC_MONTHS[month - 1]} ${day} ${year}`;
+  }
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const { ethDayOfYear, ethYear } = getEthDayOfYear(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  const { monthIndex, day } = ethMonthDay(ethDayOfYear);
+  return `${EC_MONTHS[monthIndex]} ${day} ${ethYear}`;
+}
+
+function formatEcFiscalDate(dateStr: string): string {
+  if (!dateStr) return '';
+  const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const day = Number(ddmmyyyy[1]);
+    const month = Number(ddmmyyyy[2]);
+    const year = Number(ddmmyyyy[3]);
+    const fiscalMonth = ((month - 7 + 12) % 12);
+    const fyStart = month >= 7 ? year : year - 1;
+    const fyEnd = fyStart + 1;
+    if (fiscalMonth === 1) {
+      return `Nehase–Pagume ${day < 31 ? `Nehase ${day}` : `Pagume ${day - 30}`}, ${fyStart}/${fyEnd}`;
+    }
+    return `${EC_FISCAL_MONTHS[fiscalMonth]} ${day}, ${fyStart}/${fyEnd}`;
   }
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
@@ -56,12 +112,22 @@ function formatEcDate(dateStr: string): string {
     const prevEthNewYearDay = prevLeap ? 255 : 254;
     ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
   }
-  return `${EC_MONTHS[Math.floor(ethDayOfYear / 30)]} ${(ethDayOfYear % 30) + 1} ${ethYear}`;
+  const { monthIndex, day } = ethMonthDay(ethDayOfYear);
+  const fiscalMonthIndex = (monthIndex + 2) % 13;
+  const fyStart = ethYear - 1;
+  const fyEnd = ethYear;
+  if (fiscalMonthIndex === 1) {
+    const subDay = day;
+    return `Nehase–Pagume ${subDay < 31 ? `Nehase ${subDay}` : `Pagume ${subDay - 30}`}, ${fyStart}/${fyEnd}`;
+  }
+  const adjustedIndex = fiscalMonthIndex > 1 ? fiscalMonthIndex - 1 : fiscalMonthIndex;
+  return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${day}, ${fyStart}/${fyEnd}`;
 }
 
 export function formatDate(date: string): string {
-  if (getCalendarFromStorage() === 'ec') {
-    return formatEcDate(date);
+  const cal = getCalendarFromStorage();
+  if (cal === 'ec' || cal === 'ec-fiscal') {
+    return cal === 'ec-fiscal' ? formatEcFiscalDate(date) : formatEcDate(date);
   }
   if (!date) return '';
   const d = new Date(date);
@@ -74,8 +140,9 @@ export function formatDate(date: string): string {
 }
 
 export function formatDateTime(date: string): string {
-  if (getCalendarFromStorage() === 'ec') {
-    return formatEcDate(date);
+  const cal = getCalendarFromStorage();
+  if (cal === 'ec' || cal === 'ec-fiscal') {
+    return cal === 'ec-fiscal' ? formatEcFiscalDate(date) : formatEcDate(date);
   }
   if (!date) return '';
   const d = new Date(date);

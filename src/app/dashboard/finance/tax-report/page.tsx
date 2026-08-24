@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useGetTaxReportQuery, useLazyExportTaxReportQuery } from '@/store/api/taxReportApi';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
@@ -22,6 +22,86 @@ const periods: { value: ReportPeriod; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+const FISCAL_MONTHS = [
+  { value: 1, label: 'Hamle', caption: '1–30' },
+  { value: 2, label: 'Nehase–Pagume', caption: 'Nehase 1 – Pagume 6' },
+  { value: 3, label: 'Meskerem', caption: '1–30' },
+  { value: 4, label: 'Tikimt', caption: '1–30' },
+  { value: 5, label: 'Hidar', caption: '1–30' },
+  { value: 6, label: 'Tahsas', caption: '1–30' },
+  { value: 7, label: 'Tir', caption: '1–30' },
+  { value: 8, label: 'Yekatit', caption: '1–30' },
+  { value: 9, label: 'Megabit', caption: '1–30' },
+  { value: 10, label: 'Miazia', caption: '1–30' },
+  { value: 11, label: 'Genbot', caption: '1–30' },
+  { value: 12, label: 'Sene', caption: '1–30' },
+];
+
+const FISCAL_QUARTERS = [
+  { value: 1, label: 'Q1 (Hamle – Meskerem)' },
+  { value: 2, label: 'Q2 (Tikimt – Tahsas)' },
+  { value: 3, label: 'Q3 (Tir – Megabit)' },
+  { value: 4, label: 'Q4 (Miazia – Sene)' },
+];
+
+function getCurrentFiscalMonth(): number {
+  const now = new Date();
+  const gy = now.getFullYear();
+  const gm = now.getMonth() + 1;
+  const gd = now.getDate();
+  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
+  if (isLeap) monthLengths[2] = 29;
+  let dayOfYear = gd;
+  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
+  const ethNewYearDay = isLeap ? 255 : 254;
+  let ethYear: number;
+  let ethDayOfYear: number;
+  if (dayOfYear >= ethNewYearDay) {
+    ethYear = gy - 7;
+    ethDayOfYear = dayOfYear - ethNewYearDay;
+  } else {
+    ethYear = gy - 8;
+    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
+    const prevYearDays = prevLeap ? 366 : 365;
+    const prevEthNewYearDay = prevLeap ? 255 : 254;
+    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
+  }
+  const ethMonth = Math.floor(ethDayOfYear / 30);
+  const fiscalMonthIndex = (ethMonth + 2) % 13;
+  return fiscalMonthIndex + 1;
+}
+
+function getCurrentFiscalYear(): number {
+  const now = new Date();
+  const gy = now.getFullYear();
+  const gm = now.getMonth() + 1;
+  const gd = now.getDate();
+  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
+  if (isLeap) monthLengths[2] = 29;
+  let dayOfYear = gd;
+  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
+  const ethNewYearDay = isLeap ? 255 : 254;
+  let ethYear: number;
+  if (dayOfYear >= ethNewYearDay) {
+    ethYear = gy - 7;
+  } else {
+    ethYear = gy - 8;
+  }
+  const fiscalMonth = getCurrentFiscalMonth();
+  if (fiscalMonth === 1) return ethYear - 1;
+  return ethYear;
+}
+
+function getCurrentFiscalQuarter(): number {
+  const m = getCurrentFiscalMonth();
+  if (m <= 3) return 1;
+  if (m <= 6) return 2;
+  if (m <= 9) return 3;
+  return 4;
+}
+
 export default function TaxReportPage() {
   const router = useRouter();
   const { calendar } = useUI();
@@ -30,29 +110,87 @@ export default function TaxReportPage() {
   const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [fiscalMonth, setFiscalMonth] = useState<number>(getCurrentFiscalMonth());
+  const [fiscalQuarter, setFiscalQuarter] = useState<number>(getCurrentFiscalQuarter());
+  const [fiscalYear, setFiscalYear] = useState<number>(getCurrentFiscalYear());
+
+  const isFiscal = calendar === 'ec-fiscal';
+
+  useEffect(() => {
+    if (isFiscal && activePeriod === 'custom') {
+      setActivePeriod('month');
+    }
+    setFiscalMonth(getCurrentFiscalMonth());
+    setFiscalQuarter(getCurrentFiscalQuarter());
+    setFiscalYear(getCurrentFiscalYear());
+    setReferenceDate(new Date().toISOString().split('T')[0]);
+  }, [calendar]);
 
   const queryParams = useMemo(() => {
-    const params: { period: ReportPeriod; referenceDate?: string; from?: string; to?: string } = {
-      period: activePeriod,
-    };
-    if (activePeriod !== 'custom') {
-      params.referenceDate = referenceDate;
+    const params: {
+      period: ReportPeriod;
+      referenceDate?: string;
+      from?: string;
+      to?: string;
+      fiscalYear?: number;
+      fiscalMonth?: number;
+      quarter?: number;
+    } = { period: activePeriod };
+
+    if (isFiscal) {
+      if (activePeriod === 'month') {
+        params.fiscalYear = fiscalYear;
+        params.fiscalMonth = fiscalMonth;
+      } else if (activePeriod === 'quarter') {
+        params.fiscalYear = fiscalYear;
+        params.quarter = fiscalQuarter;
+      } else if (activePeriod === 'year') {
+        params.fiscalYear = fiscalYear;
+      } else {
+        if (activePeriod === 'custom') {
+          if (customFrom) params.from = customFrom;
+          if (customTo) params.to = customTo;
+        } else {
+          params.referenceDate = referenceDate;
+        }
+      }
     } else {
-      if (customFrom) params.from = customFrom;
-      if (customTo) params.to = customTo;
+      if (activePeriod !== 'custom') {
+        params.referenceDate = referenceDate;
+      } else {
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+      }
     }
     return params;
-  }, [activePeriod, referenceDate, customFrom, customTo]);
+  }, [activePeriod, referenceDate, customFrom, customTo, fiscalMonth, fiscalQuarter, fiscalYear, isFiscal]);
 
   const { data: report, isLoading, error } = useGetTaxReportQuery(queryParams);
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
     const params: Record<string, string> = { period: activePeriod, format };
-    if (activePeriod !== 'custom' && referenceDate) {
-      params.referenceDate = referenceDate;
+    if (isFiscal) {
+      if (activePeriod === 'month') {
+        params.fiscalYear = String(fiscalYear);
+        params.fiscalMonth = String(fiscalMonth);
+      } else if (activePeriod === 'quarter') {
+        params.fiscalYear = String(fiscalYear);
+        params.quarter = String(fiscalQuarter);
+      } else if (activePeriod === 'year') {
+        params.fiscalYear = String(fiscalYear);
+      } else if (activePeriod === 'custom') {
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+      } else {
+        params.referenceDate = referenceDate;
+      }
     } else {
-      if (customFrom) params.from = customFrom;
-      if (customTo) params.to = customTo;
+      if (activePeriod !== 'custom' && referenceDate) {
+        params.referenceDate = referenceDate;
+      } else {
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+      }
     }
 
     try {
@@ -120,23 +258,83 @@ export default function TaxReportPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {periods.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setActivePeriod(p.value)}
-            className={cn(
-              'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
-              activePeriod === p.value
-                ? 'bg-brand-gold text-white'
-                : 'bg-surface border border-border text-muted hover:text-foreground hover:bg-surface-hover'
-            )}
-          >
-            {p.label}
-          </button>
-        ))}
+        {periods.map((p) => {
+          if (isFiscal && p.value === 'custom') return null;
+          return (
+            <button
+              key={p.value}
+              onClick={() => setActivePeriod(p.value)}
+              className={cn(
+                'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                activePeriod === p.value
+                  ? 'bg-brand-gold text-white'
+                  : 'bg-surface border border-border text-muted hover:text-foreground hover:bg-surface-hover'
+              )}
+            >
+              {p.label}
+            </button>
+          );
+        })}
       </div>
 
-      {activePeriod !== 'custom' && (
+      {isFiscal && (activePeriod === 'month' || activePeriod === 'quarter' || activePeriod === 'year') && (
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Fiscal Year</label>
+            <select
+              value={fiscalYear}
+              onChange={(e) => setFiscalYear(Number(e.target.value))}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+            >
+              {[0, 1, 2, 3, 4].map((offset) => {
+                const fy = getCurrentFiscalYear() - offset;
+                return (
+                  <option key={fy} value={fy}>
+                    {fy}/{fy + 1}
+                  </option>
+                );
+              })}
+            </select>
+            <p className="text-xs text-muted">Hamle {fiscalYear} – Sene {fiscalYear + 1}</p>
+          </div>
+
+          {activePeriod === 'month' && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Fiscal Month</label>
+              <select
+                value={fiscalMonth}
+                onChange={(e) => setFiscalMonth(Number(e.target.value))}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              >
+                {FISCAL_MONTHS.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label} · {m.caption}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {activePeriod === 'quarter' && (
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">Fiscal Quarter</label>
+              <select
+                value={fiscalQuarter}
+                onChange={(e) => setFiscalQuarter(Number(e.target.value))}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              >
+                {FISCAL_QUARTERS.map((q) => (
+                  <option key={q.value} value={q.value}>
+                    {q.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isFiscal && activePeriod !== 'custom' && (
         <div className="flex items-center gap-3">
           <label className="text-sm text-muted">Reference Date</label>
           <div>
@@ -153,7 +351,7 @@ export default function TaxReportPage() {
         </div>
       )}
 
-      {activePeriod === 'custom' && (
+      {!isFiscal && activePeriod === 'custom' && (
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <label className="text-sm text-muted">From</label>
@@ -182,6 +380,21 @@ export default function TaxReportPage() {
                 <p className="text-xs text-brand-gold mt-1">{formatDate(customTo)}</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {isFiscal && (activePeriod === 'day' || activePeriod === 'week') && (
+        <div className="flex items-center gap-3">
+          <label className="text-sm text-muted">Reference Date</label>
+          <div>
+            <input
+              type="date"
+              value={referenceDate}
+              onChange={(e) => setReferenceDate(e.target.value)}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+            />
+            <p className="text-xs text-brand-gold mt-1">{formatDate(referenceDate)}</p>
           </div>
         </div>
       )}

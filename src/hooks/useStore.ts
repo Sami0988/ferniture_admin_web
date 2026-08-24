@@ -1,7 +1,7 @@
 'use client';
 
 import { useAppDispatch, useAppSelector } from '@/store';
-import { toggleSidebar, toggleDarkMode, toggleCalendar, setActiveView } from '@/store/uiSlice';
+import { toggleSidebar, toggleDarkMode, setCalendar, setActiveView } from '@/store/uiSlice';
 import type { CalendarType } from '@/store/uiSlice';
 import { logout as authLogout, setCredentials, setUser, setMfaEnabled } from '@/store/authSlice';
 
@@ -20,7 +20,7 @@ export const useUI = () => {
     calendar,
     toggleSidebar: () => dispatch(toggleSidebar()),
     toggleDarkMode: () => dispatch(toggleDarkMode()),
-    toggleCalendar: () => dispatch(toggleCalendar()),
+    setCalendar: (cal: CalendarType) => dispatch(setCalendar(cal)),
     setActiveView: (view: 'list' | 'kanban') => dispatch(setActiveView(view)),
   };
 };

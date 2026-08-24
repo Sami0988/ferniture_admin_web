@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-export type CalendarType = 'gc' | 'ec';
+export type CalendarType = 'gc' | 'ec' | 'ec-fiscal';
 
 interface UiState {
   sidebarCollapsed: boolean;
@@ -36,12 +36,14 @@ const uiSlice = createSlice({
       }
     },
     toggleCalendar: (state) => {
-      state.calendar = state.calendar === 'gc' ? 'ec' : 'gc';
+      const cycle: Record<string, CalendarType> = { gc: 'ec', ec: 'ec-fiscal', 'ec-fiscal': 'gc' };
+      state.calendar = cycle[state.calendar] || 'gc';
       if (typeof window !== 'undefined') {
         localStorage.setItem('kw_calendar', state.calendar);
       }
     },
     setCalendar: (state, action: PayloadAction<CalendarType>) => {
+      if (!['gc', 'ec', 'ec-fiscal'].includes(action.payload)) return;
       state.calendar = action.payload;
       if (typeof window !== 'undefined') {
         localStorage.setItem('kw_calendar', action.payload);

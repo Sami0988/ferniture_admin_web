@@ -1059,6 +1059,9 @@ export interface TaxReportQuery {
   referenceDate?: string;
   from?: string;
   to?: string;
+  fiscalYear?: number;
+  fiscalMonth?: number;
+  quarter?: number;
 }
 
 export interface TaxReportResponse {

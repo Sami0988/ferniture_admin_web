@@ -43,10 +43,10 @@ const baseQueryWithReauth = async (
   // Inject calendar param when user preference is set
   const cal = getCalendarValue();
   let modifiedArgs = args;
-  if (cal === 'ec' && typeof args !== 'string') {
+  if (typeof args !== 'string' && (cal === 'ec' || cal === 'ec-fiscal')) {
     modifiedArgs = {
       ...args,
-      params: { ...args.params, calendar: 'ec' },
+      params: { ...args.params, calendar: cal },
     };
   }
 
