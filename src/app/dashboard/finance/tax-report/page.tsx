@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Skeleton from '@/components/ui/Skeleton';
 import { ReportPeriod, TaxReportResponse } from '@/types/api';
-import { Download, FileText, TrendingUp, TrendingDown, Receipt, Building2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Download, FileText, TrendingUp, TrendingDown, Receipt, Building2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 
@@ -170,7 +170,7 @@ export default function TaxReportPage() {
     return params;
   }, [activePeriod, referenceDate, customFrom, customTo, fiscalMonth, fiscalQuarter, fiscalYear, isFiscal]);
 
-  const { data: report, isLoading, error } = useGetTaxReportQuery(queryParams);
+  const { data: report, isLoading, isFetching, error } = useGetTaxReportQuery(queryParams);
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
     const params: Record<string, string> = { period: activePeriod, format };
@@ -251,11 +251,11 @@ export default function TaxReportPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')}>
+          <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')} disabled={isFetching}>
             <Download className="h-4 w-4 mr-1.5" />
             Export Excel
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExport('pdf')}>
+          <Button variant="outline" size="sm" onClick={() => handleExport('pdf')} disabled={isFetching}>
             <FileText className="h-4 w-4 mr-1.5" />
             Export PDF
           </Button>
@@ -269,8 +269,9 @@ export default function TaxReportPage() {
             <button
               key={p.value}
               onClick={() => setActivePeriod(p.value)}
+              disabled={isFetching}
               className={cn(
-                'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
+                'px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                 activePeriod === p.value
                   ? 'bg-brand-gold text-white'
                   : 'bg-surface border border-border text-muted hover:text-foreground hover:bg-surface-hover'
@@ -289,7 +290,8 @@ export default function TaxReportPage() {
             <select
               value={fiscalYear}
               onChange={(e) => setFiscalYear(Number(e.target.value))}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              disabled={isFetching}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold disabled:opacity-50"
             >
               {[0, 1, 2, 3, 4].map((offset) => {
                 const fy = getCurrentFiscalYear() - offset;
@@ -309,7 +311,8 @@ export default function TaxReportPage() {
               <select
                 value={fiscalMonth}
                 onChange={(e) => setFiscalMonth(Number(e.target.value))}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                disabled={isFetching}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold disabled:opacity-50"
               >
                 {FISCAL_MONTHS.map((m) => (
                   <option key={m.value} value={m.value}>
@@ -326,7 +329,8 @@ export default function TaxReportPage() {
               <select
                 value={fiscalQuarter}
                 onChange={(e) => setFiscalQuarter(Number(e.target.value))}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                disabled={isFetching}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold disabled:opacity-50"
               >
                 {FISCAL_QUARTERS.map((q) => (
                   <option key={q.value} value={q.value}>
@@ -347,7 +351,8 @@ export default function TaxReportPage() {
               type="date"
               value={referenceDate}
               onChange={(e) => setReferenceDate(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              disabled={isFetching}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
             />
             {calendar === 'ec' && (
               <p className="text-xs text-brand-gold mt-1">{formatDate(referenceDate)}</p>
@@ -365,7 +370,8 @@ export default function TaxReportPage() {
                 type="date"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                disabled={isFetching}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
               />
               {calendar === 'ec' && (
                 <p className="text-xs text-brand-gold mt-1">{formatDate(customFrom)}</p>
@@ -379,7 +385,8 @@ export default function TaxReportPage() {
                 type="date"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                disabled={isFetching}
+                className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
               />
               {calendar === 'ec' && (
                 <p className="text-xs text-brand-gold mt-1">{formatDate(customTo)}</p>
@@ -397,7 +404,8 @@ export default function TaxReportPage() {
               type="date"
               value={referenceDate}
               onChange={(e) => setReferenceDate(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              disabled={isFetching}
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground disabled:opacity-50"
             />
             <p className="text-xs text-brand-gold mt-1">{formatDate(referenceDate)}</p>
           </div>
@@ -405,10 +413,14 @@ export default function TaxReportPage() {
       )}
 
       {isLoading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32" />
-          ))}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-32" />
+            ))}
+          </div>
+          <Skeleton className="h-48" />
+          <Skeleton className="h-48" />
         </div>
       )}
 
@@ -421,7 +433,15 @@ export default function TaxReportPage() {
       )}
 
       {!isLoading && !error && report && (
-        <>
+        <div className="relative">
+          {isFetching && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-background/60 backdrop-blur-sm">
+              <div className="flex items-center gap-2 text-sm text-muted">
+                <Loader2 className="h-5 w-5 animate-spin text-brand-gold" />
+                Loading report...
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <div className="space-y-2">
@@ -585,7 +605,7 @@ export default function TaxReportPage() {
               </div>
             </Card>
           )}
-        </>
+        </div>
       )}
     </motion.div>
   );
