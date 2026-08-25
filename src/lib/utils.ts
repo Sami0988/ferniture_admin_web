@@ -1,9 +1,21 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { toEC, monthNames } from 'kenat';
 
 function getCalendarFromStorage(): string {
   if (typeof window === 'undefined') return 'gc';
   try { return localStorage.getItem('kw_calendar') || 'gc'; } catch { return 'gc'; }
+}
+
+function getLocalDate(dateStr: string): { year: number; month: number; day: number } | null {
+  if (!dateStr) return null;
+  const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    return { month: Number(ddmmyyyy[1]), day: Number(ddmmyyyy[2]), year: Number(ddmmyyyy[3]) };
+  }
+  const date = new Date(dateStr + 'T00:00:00');
+  if (isNaN(date.getTime())) return null;
+  return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
 }
 
 export function cn(...inputs: ClassValue[]) {
@@ -19,43 +31,22 @@ export function formatCurrency(amount: number | string): string {
   }).format(num)}`;
 }
 
-const EC_MONTHS = [
-  'Meskerem', 'Tikimt', 'Hidar', 'Tahsas', 'Tir', 'Yekatit',
-  'Megabit', 'Miyazya', 'Ginbot', 'Sene', 'Hamle', 'Nehase', 'Pagume',
-];
+const EC_MONTHS = monthNames.english;
 
 const EC_FISCAL_MONTHS = [
   'Hamle', 'Nehase–Pagume', 'Meskerem', 'Tikimt', 'Hidar', 'Tahsas',
   'Tir', 'Yekatit', 'Megabit', 'Miazia', 'Genbot', 'Sene',
 ];
 
-function getEthDayOfYear(gy: number, gm: number, gd: number): { ethDayOfYear: number; ethYear: number } {
-  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
-  if (isLeap) monthLengths[2] = 29;
-  let dayOfYear = gd;
-  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
-  const ethNewYearDay = isLeap ? 255 : 254;
-  let ethYear: number;
-  let ethDayOfYear: number;
-  if (dayOfYear >= ethNewYearDay) {
-    ethYear = gy - 7;
-    ethDayOfYear = dayOfYear - ethNewYearDay;
-  } else {
-    ethYear = gy - 8;
-    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
-    const prevYearDays = prevLeap ? 366 : 365;
-    const prevEthNewYearDay = prevLeap ? 255 : 254;
-    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
-  }
-  return { ethDayOfYear, ethYear };
+function toEthiopian(dateStr: string): { year: number; month: number; day: number } | null {
+  const local = getLocalDate(dateStr);
+  if (!local) return null;
+  return toEC(local.year, local.month, local.day);
 }
 
-function ethMonthDay(ethDayOfYear: number): { monthIndex: number; day: number } {
-  if (ethDayOfYear >= 330) return { monthIndex: 12, day: ethDayOfYear - 330 + 1 };
-  const monthIndex = Math.floor(ethDayOfYear / 30);
-  const day = (ethDayOfYear % 30) + 1;
-  return { monthIndex, day };
+function ecMonthToFiscal(ecMonthIndex: number): number {
+  if (ecMonthIndex >= 10) return ecMonthIndex === 10 ? 0 : 1;
+  return ecMonthIndex + 2;
 }
 
 function formatEcDate(dateStr: string): string {
@@ -67,16 +58,9 @@ function formatEcDate(dateStr: string): string {
     const year = Number(ddmmyyyy[3]);
     return `${EC_MONTHS[month - 1]} ${day} ${year}`;
   }
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const { ethDayOfYear, ethYear } = getEthDayOfYear(date.getFullYear(), date.getMonth() + 1, date.getDate());
-  const { monthIndex, day } = ethMonthDay(ethDayOfYear);
-  return `${EC_MONTHS[monthIndex]} ${day} ${ethYear}`;
-}
-
-function ecMonthToFiscal(ecMonthIndex: number): number {
-  if (ecMonthIndex >= 10) return ecMonthIndex === 10 ? 0 : 1;
-  return ecMonthIndex + 2;
+  const ec = toEthiopian(dateStr);
+  if (!ec) return dateStr;
+  return `${EC_MONTHS[ec.month - 1]} ${ec.day} ${ec.year}`;
 }
 
 function formatEcFiscalDate(dateStr: string): string {
@@ -96,38 +80,17 @@ function formatEcFiscalDate(dateStr: string): string {
     }
     return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${day}, ${fyStart}/${fyEnd}`;
   }
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const gy = date.getFullYear();
-  const gm = date.getMonth() + 1;
-  const gd = date.getDate();
-  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
-  if (isLeap) monthLengths[2] = 29;
-  let dayOfYear = gd;
-  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
-  const ethNewYearDay = isLeap ? 255 : 254;
-  let ethYear: number;
-  let ethDayOfYear: number;
-  if (dayOfYear >= ethNewYearDay) {
-    ethYear = gy - 7;
-    ethDayOfYear = dayOfYear - ethNewYearDay;
-  } else {
-    ethYear = gy - 8;
-    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
-    const prevYearDays = prevLeap ? 366 : 365;
-    const prevEthNewYearDay = prevLeap ? 255 : 254;
-    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
-  }
-  const { monthIndex, day } = ethMonthDay(ethDayOfYear);
-  const fiscalMonthIndex = ecMonthToFiscal(monthIndex);
-  const fyStart = monthIndex >= 10 ? ethYear : ethYear - 1;
+  const ec = toEthiopian(dateStr);
+  if (!ec) return dateStr;
+  const ecMonthIndex = ec.month - 1;
+  const fiscalMonthIndex = ecMonthToFiscal(ecMonthIndex);
+  const fyStart = ecMonthIndex >= 10 ? ec.year : ec.year - 1;
   const fyEnd = fyStart + 1;
   if (fiscalMonthIndex === 1) {
-    const monthName = monthIndex === 12 ? 'Pagume' : 'Nehase';
-    return `Nehase–Pagume ${monthName} ${day}, ${fyStart}/${fyEnd}`;
+    const monthName = ecMonthIndex === 12 ? 'Pagume' : 'Nehase';
+    return `Nehase–Pagume ${monthName} ${ec.day}, ${fyStart}/${fyEnd}`;
   }
-  return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${day}, ${fyStart}/${fyEnd}`;
+  return `${EC_FISCAL_MONTHS[fiscalMonthIndex]} ${ec.day}, ${fyStart}/${fyEnd}`;
 }
 
 export function formatDate(date: string): string {

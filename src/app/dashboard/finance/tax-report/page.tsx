@@ -12,6 +12,7 @@ import { ReportPeriod, TaxReportResponse } from '@/types/api';
 import { Download, FileText, TrendingUp, TrendingDown, Receipt, Building2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
+import Kenat from 'kenat';
 
 const periods: { value: ReportPeriod; label: string }[] = [
   { value: 'day', label: 'Day' },
@@ -44,59 +45,29 @@ const FISCAL_QUARTERS = [
   { value: 4, label: 'Q4 (Miazia – Sene)' },
 ];
 
+function getLocalDateString(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 function getCurrentFiscalMonth(): number {
   const now = new Date();
-  const gy = now.getFullYear();
-  const gm = now.getMonth() + 1;
-  const gd = now.getDate();
-  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
-  if (isLeap) monthLengths[2] = 29;
-  let dayOfYear = gd;
-  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
-  const ethNewYearDay = isLeap ? 255 : 254;
-  let ethYear: number;
-  let ethDayOfYear: number;
-  if (dayOfYear >= ethNewYearDay) {
-    ethYear = gy - 7;
-    ethDayOfYear = dayOfYear - ethNewYearDay;
-  } else {
-    ethYear = gy - 8;
-    const prevLeap = ((gy - 1) % 4 === 0 && (gy - 1) % 100 !== 0) || (gy - 1) % 400 === 0;
-    const prevYearDays = prevLeap ? 366 : 365;
-    const prevEthNewYearDay = prevLeap ? 255 : 254;
-    ethDayOfYear = prevYearDays - prevEthNewYearDay + dayOfYear;
-  }
-  const ethMonth = Math.floor(ethDayOfYear / 30);
-  let fiscalMonthIndex: number;
-  if (ethMonth >= 10) {
-    fiscalMonthIndex = ethMonth === 10 ? 0 : 1;
-  } else {
-    fiscalMonthIndex = ethMonth + 2;
-  }
-  return fiscalMonthIndex + 1;
+  const ec = new Kenat(now).getEthiopian();
+  const ethMonthIndex = ec.month - 1;
+  if (ethMonthIndex === 10) return 1;
+  if (ethMonthIndex === 11 || ethMonthIndex === 12) return 2;
+  return ethMonthIndex + 3;
 }
 
 function getCurrentFiscalYear(): number {
   const now = new Date();
-  const gy = now.getFullYear();
-  const gm = now.getMonth() + 1;
-  const gd = now.getDate();
-  const monthLengths = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-  const isLeap = (gy % 4 === 0 && gy % 100 !== 0) || gy % 400 === 0;
-  if (isLeap) monthLengths[2] = 29;
-  let dayOfYear = gd;
-  for (let i = 1; i < gm; i++) dayOfYear += monthLengths[i];
-  const ethNewYearDay = isLeap ? 255 : 254;
-  let ethYear: number;
-  if (dayOfYear >= ethNewYearDay) {
-    ethYear = gy - 7;
-  } else {
-    ethYear = gy - 8;
-  }
-  const fiscalMonth = getCurrentFiscalMonth();
-  if (fiscalMonth === 1) return ethYear - 1;
-  return ethYear;
+  const ec = new Kenat(now).getEthiopian();
+  const ethMonthIndex = ec.month - 1;
+  if (ethMonthIndex < 10) return ec.year - 1;
+  return ec.year;
 }
 
 function getCurrentFiscalQuarter(): number {
@@ -112,7 +83,7 @@ export default function TaxReportPage() {
   const { calendar } = useUI();
   const [triggerExport] = useLazyExportTaxReportQuery();
   const [activePeriod, setActivePeriod] = useState<ReportPeriod>('month');
-  const [referenceDate, setReferenceDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [referenceDate, setReferenceDate] = useState(() => getLocalDateString());
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
   const [fiscalMonth, setFiscalMonth] = useState<number>(getCurrentFiscalMonth());
@@ -128,7 +99,7 @@ export default function TaxReportPage() {
     setFiscalMonth(getCurrentFiscalMonth());
     setFiscalQuarter(getCurrentFiscalQuarter());
     setFiscalYear(getCurrentFiscalYear());
-    setReferenceDate(new Date().toISOString().split('T')[0]);
+    setReferenceDate(getLocalDateString());
   }, [calendar]);
 
   const queryParams = useMemo(() => {
