@@ -13,7 +13,8 @@ function getLocalDate(dateStr: string): { year: number; month: number; day: numb
   if (ddmmyyyy) {
     return { month: Number(ddmmyyyy[1]), day: Number(ddmmyyyy[2]), year: Number(ddmmyyyy[3]) };
   }
-  const date = new Date(dateStr + 'T00:00:00');
+  const hasTime = dateStr.includes('T');
+  const date = new Date(hasTime ? dateStr : dateStr + 'T00:00:00');
   if (isNaN(date.getTime())) return null;
   return { year: date.getFullYear(), month: date.getMonth() + 1, day: date.getDate() };
 }
