@@ -56,9 +56,9 @@ export default function ProformaForm({ id }: ProformaFormProps) {
       setBilledToTin(existing.billedToTin || '');
       setSubject(existing.subject || '');
       setNotes(existing.notes || '');
-      setValidityDays(existing.validityDays);
-      setVatRate(existing.vatRate);
-      setDiscountAmount(existing.discountAmount);
+      setValidityDays(Number(existing.validityDays));
+      setVatRate(Number(existing.vatRate));
+      setDiscountAmount(Number(existing.discountAmount));
       setItems(existing.items);
     }
   }, [existing]);
