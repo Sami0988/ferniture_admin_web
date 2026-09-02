@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useGetPurchasesQuery, useCreatePurchaseMutation, useUpdatePurchaseMutation, useDeletePurchaseMutation } from '@/store/api/purchasesApi';
+import { useGetPurchasesQuery, useLazyGetPurchaseByIdQuery, useCreatePurchaseMutation, useUpdatePurchaseMutation, useDeletePurchaseMutation } from '@/store/api/purchasesApi';
 import { usePermission } from '@/hooks/usePermission';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import { purchaseFormSchema, PurchaseFormData } from '@/lib/validations';
@@ -80,6 +80,7 @@ export default function PurchaseRecordsPage() {
   const [createPurchase, { isLoading: isCreating }] = useCreatePurchaseMutation();
   const [updatePurchase, { isLoading: isUpdating }] = useUpdatePurchaseMutation();
   const [deletePurchase] = useDeletePurchaseMutation();
+  const [getPurchaseById] = useLazyGetPurchaseByIdQuery();
 
   const purchases = useMemo(() => {
     const data = purchasesData?.data;
@@ -148,15 +149,27 @@ export default function PurchaseRecordsPage() {
   const openEditModal = async (purchase: ApiPurchase) => {
     setEditingPurchase(purchase);
     setFormSupplier({ id: purchase.supplierId, companyName: purchase.supplierName, tinNumber: '', phone: null, address: null });
-    setFormItems([{ materialName: '', quantity: 1, unitPrice: 0 }]);
-    reset({
-      supplierId: purchase.supplierId,
-      fsNumber: purchase.fsNumber || '',
-      bankTransactionNumber: purchase.bankTransactionNumber || '',
-      purchaseDate: purchase.purchaseDate ? purchase.purchaseDate.split('T')[0] : '',
-      items: [],
-    });
     setModalOpen(true);
+
+    try {
+      const result = await getPurchaseById(purchase.id).unwrap();
+      const detail = result?.data;
+      const items = detail?.items?.map((item) => ({
+        materialName: item.materialName,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+      })) || [];
+      setFormItems(items.length > 0 ? items : [{ materialName: '', quantity: 1, unitPrice: 0 }]);
+      reset({
+        supplierId: purchase.supplierId,
+        fsNumber: purchase.fsNumber || '',
+        bankTransactionNumber: purchase.bankTransactionNumber || '',
+        purchaseDate: purchase.purchaseDate ? purchase.purchaseDate.split('T')[0] : '',
+        items,
+      });
+    } catch {
+      setFormItems([{ materialName: '', quantity: 1, unitPrice: 0 }]);
+    }
   };
 
   const addItem = () => {
@@ -202,9 +215,9 @@ export default function PurchaseRecordsPage() {
         supplierId: formSupplier.id,
         fsNumber: data.fsNumber,
         purchaseDate: data.purchaseDate,
+        bankTransactionNumber: data.bankTransactionNumber || null,
         items: validItems,
       };
-      if (data.bankTransactionNumber) payload.bankTransactionNumber = data.bankTransactionNumber;
 
       if (editingPurchase) {
         await updatePurchase({ id: editingPurchase.id, data: payload }).unwrap();
@@ -442,7 +455,7 @@ export default function PurchaseRecordsPage() {
                   <div className="w-full sm:w-24">
                     {idx === 0 && <label className="block text-xs text-muted mb-1 sm:hidden">Qty</label>}
                     <label className="hidden sm:block text-xs text-muted mb-1">Qty</label>
-                    <input type="number" min={1} value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground" />
+                    <input type="number" min={0.01} step="any" value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', e.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground" />
                   </div>
                   <div className="w-full sm:w-32">
                     {idx === 0 && <label className="block text-xs text-muted mb-1 sm:hidden">Unit Price</label>}

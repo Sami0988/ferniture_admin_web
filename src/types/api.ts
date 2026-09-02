@@ -1122,3 +1122,111 @@ export interface GalleryProjectFilters {
   page?: number;
   limit?: number;
 }
+
+// ── Proformas ──────────────────────────────────────────────
+export type ProformaUnit = 'PCS' | 'M2' | 'ML' | 'SET' | 'LOT' | 'KG';
+export type ProformaStatus = 'draft' | 'sent' | 'accepted' | 'expired' | 'cancelled';
+export type ProformaItemType =
+  | 'aluminum_partition'
+  | 'closet'
+  | 'kitchen_cabinet'
+  | 'sofa'
+  | 'dressing'
+  | 'shelf'
+  | 'dining_table'
+  | 'console_table'
+  | 'interior_design'
+  | 'tempered_glass_partition'
+  | 'tv_stand'
+  | 'light_box'
+  | 'indoor_signage';
+
+export const PROFORMA_ITEM_TYPES: { value: ProformaItemType; label: string }[] = [
+  { value: 'aluminum_partition', label: 'Aluminum Partition' },
+  { value: 'closet', label: 'Closet' },
+  { value: 'kitchen_cabinet', label: 'Kitchen Cabinet' },
+  { value: 'sofa', label: 'Sofa' },
+  { value: 'dressing', label: 'Dressing' },
+  { value: 'shelf', label: 'Shelf' },
+  { value: 'dining_table', label: 'Dining Table' },
+  { value: 'console_table', label: 'Console Table' },
+  { value: 'interior_design', label: 'Interior Design' },
+  { value: 'tempered_glass_partition', label: 'Tempered Glass Partition' },
+  { value: 'tv_stand', label: 'TV Stand' },
+  { value: 'light_box', label: 'Light Box' },
+  { value: 'indoor_signage', label: 'Indoor Signage' },
+];
+
+export interface ProformaItem {
+  id: string;
+  description: ProformaItemType;
+  quantity: number;
+  unit: ProformaUnit;
+  unitPrice: number;
+  total: number;
+  sortOrder: number;
+}
+
+export interface Proforma {
+  id: string;
+  proformaNumber: string;
+  customerId?: string;
+  projectId?: string;
+  billedToName: string;
+  billedToAddress?: string;
+  billedToPhone?: string;
+  billedToTin?: string;
+  subject?: string;
+  notes?: string;
+  validityDays: number;
+  subtotal: number;
+  vatRate: number;
+  vatAmount: number;
+  discountAmount: number;
+  totalAmount: number;
+  status: ProformaStatus;
+  pdfUrl?: string;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  items: ProformaItem[];
+}
+
+export interface CreateProformaRequest {
+  customerId?: string;
+  projectId?: string;
+  billedToName: string;
+  billedToAddress?: string;
+  billedToPhone?: string;
+  billedToTin?: string;
+  subject?: string;
+  notes?: string;
+  validityDays?: number;
+  vatRate?: number;
+  discountAmount?: number;
+  items: Omit<ProformaItem, 'id' | 'total'>[];
+}
+
+export interface UpdateProformaRequest {
+  customerId?: string;
+  projectId?: string;
+  billedToName?: string;
+  billedToAddress?: string;
+  billedToPhone?: string;
+  billedToTin?: string;
+  subject?: string;
+  notes?: string;
+  validityDays?: number;
+  vatRate?: number;
+  discountAmount?: number;
+  items?: Omit<ProformaItem, 'id' | 'total'>[];
+}
+
+export interface ProformaListQuery {
+  status?: ProformaStatus;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  pageSize?: number;
+}

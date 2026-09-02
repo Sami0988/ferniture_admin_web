@@ -62,6 +62,7 @@ export const purchasesApi = baseApi.injectEndpoints({
 export const {
   useGetPurchasesQuery,
   useGetPurchaseByIdQuery,
+  useLazyGetPurchaseByIdQuery,
   useCreatePurchaseMutation,
   useUpdatePurchaseMutation,
   useDeletePurchaseMutation,

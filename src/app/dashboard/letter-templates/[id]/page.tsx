@@ -53,8 +53,8 @@ export default function LetterTemplateEditorPage() {
   
   // Custom template fields
   const [fieldValues, setFieldValues] = useState<Record<string, string>>(DEFAULT_FIELD_VALUES);
-  const [headerBgColor, setHeaderBgColor] = useState('#5c3a1e');
-  const [headerAccentColor, setHeaderAccentColor] = useState('#f97316');
+  const [headerBgColor, setHeaderBgColor] = useState('#5C3A21');
+  const [headerAccentColor, setHeaderAccentColor] = useState('#C8913A');
   const [companyNameFontSize, setCompanyNameFontSize] = useState('medium');
   const [bodyFontSize, setBodyFontSize] = useState('medium');
   const [showPhoneInFooter, setShowPhoneInFooter] = useState(true);

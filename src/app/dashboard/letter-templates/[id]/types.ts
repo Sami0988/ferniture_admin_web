@@ -27,7 +27,7 @@ export interface TemplateStyleConfig {
 export const DEFAULT_STYLE_CONFIG: TemplateStyleConfig = {
   mode: 'styled',
   headerStyle: 'modern',
-  header: { backgroundColor: '#5c3a1e', accentColor: '#f97316', logoPosition: 'left', companyNameSize: 'medium' },
+  header: { backgroundColor: '#5C3A21', accentColor: '#C8913A', logoPosition: 'left', companyNameSize: 'medium' },
   subject: { alignment: 'center', underline: true },
   body: { fontSize: 'medium', lineSpacing: 'normal' },
   closing: { text: 'Thank you for your cooperation.' },

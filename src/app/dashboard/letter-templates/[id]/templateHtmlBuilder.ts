@@ -6,8 +6,8 @@ const LINE_HEIGHT_MAP = { compact: "1.4", normal: "1.6", relaxed: "1.9" };
 
 function buildClassicHeader(config: TemplateStyleConfig): string {
   const { header } = config;
-  const bg = header.backgroundColor || "#5c3a1e";
-  const accent = header.accentColor || "#f97316";
+  const bg = header.backgroundColor || "#5C3A21";
+  const accent = header.accentColor || "#C8913A";
   const nameSize = NAME_SIZE_MAP[header.companyNameSize] || "20px";
 
   return `
@@ -28,8 +28,8 @@ function buildClassicHeader(config: TemplateStyleConfig): string {
 
 function buildModernHeader(config: TemplateStyleConfig): string {
   const { header } = config;
-  const accent = header.accentColor || "#f97316";
-  const bg = header.backgroundColor || "#5c3a1e";
+  const accent = header.accentColor || "#C8913A";
+  const bg = header.backgroundColor || "#5C3A21";
   const nameSizeNum = parseInt(NAME_SIZE_MAP[header.companyNameSize]) || 20;
   const fontSize = Math.min(Math.max(Math.round(nameSizeNum * 1.2), 14), 28);
 

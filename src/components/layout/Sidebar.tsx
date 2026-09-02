@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Truck,
   Receipt,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 interface NavItem {
@@ -87,6 +88,7 @@ const navGroups: NavGroup[] = [
     icon: FileText,
     items: [
       { href: '/dashboard/invoices', label: 'Invoices', icon: FileText },
+      { href: '/dashboard/proformas', label: 'Proformas', icon: FileSpreadsheet },
       { href: '/dashboard/payment-letters', label: 'Payment Letters', icon: Mail },
       { href: '/dashboard/finance/tax-report', label: 'Tax Report', icon: FileText },
     ],
@@ -138,7 +140,7 @@ export default function Sidebar() {
     .map((group) => ({
       ...group,
       items: group.items.filter((item) => {
-        if (['invoices', 'payment-letters', 'tax-report'].includes(item.href.split('/').pop() || '')) {
+        if (['invoices', 'proformas', 'payment-letters', 'tax-report'].includes(item.href.split('/').pop() || '')) {
           return canViewFinancials;
         }
         return true;
