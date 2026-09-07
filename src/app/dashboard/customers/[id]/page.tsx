@@ -1,13 +1,14 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useGetCustomerByIdQuery } from '@/store/api/customersApi';
+import { useGetCustomerByIdQuery, useDeleteCustomerMutation } from '@/store/api/customersApi';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import StatusPill from '@/components/ui/StatusPill';
-import { ArrowLeft, Phone, Mail, MapPin, Package, TrendingUp, Clock, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Phone, Mail, MapPin, Package, TrendingUp, Clock, CheckCircle, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function CustomerDetailPage() {
   const customerId = params.id as string;
 
   const { data: customerData, isLoading } = useGetCustomerByIdQuery(customerId);
+  const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
 
   const customer = customerData?.data;
   const orders = customer?.orders ?? [];
@@ -38,6 +40,18 @@ export default function CustomerDetailPage() {
   }
 
   const stats = customer.stats;
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${customer.fullName}"? This cannot be undone.`)) return;
+    try {
+      await deleteCustomer(customerId).unwrap();
+      toast.success('Customer deleted');
+      router.push('/dashboard/customers');
+    } catch (err: any) {
+      const message = err?.data?.message || 'Failed to delete customer';
+      toast.error(message);
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -66,7 +80,11 @@ export default function CustomerDetailPage() {
             </div>
           </div>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button variant="danger" onClick={handleDelete} loading={isDeleting}>
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
           <Button onClick={() => router.push(`/dashboard/projects?customerId=${customer.id}`)}>
             <Package className="h-4 w-4" />
             New Work Order
