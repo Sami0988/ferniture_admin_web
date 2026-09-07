@@ -417,8 +417,8 @@ export default function TaxReportPage() {
             <Card>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted">
-                  <TrendingUp className="h-4 w-4" />
-                  Output VAT (Sales)
+                  <TrendingDown className="h-4 w-4" />
+                  Input VAT (Sales)
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(report.vatSummary?.outputVat ?? 0)}
@@ -432,8 +432,8 @@ export default function TaxReportPage() {
             <Card>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted">
-                  <TrendingDown className="h-4 w-4" />
-                  Input VAT (Purchases)
+                  <TrendingUp className="h-4 w-4" />
+                  Output VAT (Purchases)
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(report.vatSummary?.inputVat ?? 0)}
