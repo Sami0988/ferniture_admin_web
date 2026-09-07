@@ -42,7 +42,7 @@ function detectStyleConfig(html: string): TemplateStyleConfig {
     config.header.backgroundColor = colors[0];
   }
 
-  config.headerStyle = html.includes("rotate(45deg)") ? "modern" : "classic";
+  config.headerStyle = "modern";
 
   const nameMatch = html.match(/font-size:\s*(\d+)px/);
   if (nameMatch) {

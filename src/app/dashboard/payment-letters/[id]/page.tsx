@@ -156,7 +156,7 @@ export default function PaymentLetterDetailPage() {
       } else if (colors.length === 1) {
         config.header.backgroundColor = colors[0];
       }
-      config.headerStyle = html.includes('rotate(45deg)') ? 'modern' : 'classic';
+      config.headerStyle = 'modern';
     }
 
     const companyLogo = company?.company_logo
