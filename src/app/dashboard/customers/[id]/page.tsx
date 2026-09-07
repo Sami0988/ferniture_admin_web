@@ -1,10 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useGetCustomerByIdQuery, useDeleteCustomerMutation } from '@/store/api/customersApi';
 import { cn, formatCurrency, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
 import StatusPill from '@/components/ui/StatusPill';
 import { ArrowLeft, Phone, Mail, MapPin, Package, TrendingUp, Clock, CheckCircle, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -17,6 +19,7 @@ export default function CustomerDetailPage() {
 
   const { data: customerData, isLoading } = useGetCustomerByIdQuery(customerId);
   const [deleteCustomer, { isLoading: isDeleting }] = useDeleteCustomerMutation();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const customer = customerData?.data;
   const orders = customer?.orders ?? [];
@@ -42,7 +45,6 @@ export default function CustomerDetailPage() {
   const stats = customer.stats;
 
   const handleDelete = async () => {
-    if (!confirm(`Delete "${customer.fullName}"? This cannot be undone.`)) return;
     try {
       await deleteCustomer(customerId).unwrap();
       toast.success('Customer deleted');
@@ -81,7 +83,7 @@ export default function CustomerDetailPage() {
           </div>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button variant="danger" onClick={handleDelete} loading={isDeleting}>
+          <Button variant="danger" onClick={() => setDeleteConfirmOpen(true)}>
             <Trash2 className="h-4 w-4" />
             Delete
           </Button>
@@ -240,6 +242,24 @@ export default function CustomerDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirm Modal */}
+      <Modal
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        title="Delete Customer"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Are you sure you want to delete <strong>{customer.fullName}</strong>? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={handleDelete} loading={isDeleting}>Delete</Button>
+          </div>
+        </div>
+      </Modal>
     </motion.div>
   );
 }
