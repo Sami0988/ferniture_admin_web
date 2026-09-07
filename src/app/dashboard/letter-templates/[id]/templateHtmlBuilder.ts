@@ -34,23 +34,23 @@ function buildModernHeader(config: TemplateStyleConfig): string {
   const fontSize = Math.min(Math.max(Math.round(nameSizeNum * 1.2), 14), 28);
 
   return `
-  <div style="position: relative; height: 110px; margin-bottom: 0; overflow: hidden;">
-    <div style="position: absolute; top: 0; left: 0; width: 200px; height: 110px; overflow: hidden;">
+  <div style="position: relative; height: 90px; overflow: hidden;">
+    <div style="position: absolute; top: 0; left: 0; width: 200px; height: 90px; overflow: hidden;">
       <div style="position: absolute; top: -50px; left: -60px; width: 130px; height: 220px; background: ${bg}; transform: rotate(-20deg);"></div>
       <div style="position: absolute; top: -50px; left: -5px; width: 90px; height: 220px; background: ${accent}; transform: rotate(-20deg);"></div>
       <div style="position: absolute; top: -50px; left: 40px; width: 55px; height: 220px; background: ${bg}; transform: rotate(-20deg);"></div>
     </div>
-    <div style="position: absolute; top: 10px; left: 50px; z-index: 2;">
-      <div style="width: 80px; height: 80px; background: ${accent}; transform: rotate(45deg); display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+    <div style="position: absolute; top: 5px; left: 50px; z-index: 20;">
+      <div style="background: ${accent}; transform: rotate(45deg); width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
         <div style="width: 66px; height: 66px; background: white; border-radius: 50%; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; overflow: hidden;">
           {{companyLogo}}
         </div>
       </div>
     </div>
-    <div style="position: absolute; top: 18px; left: 145px; right: 0; height: 70px; z-index: 1;">
+    <div style="position: absolute; top: 10px; left: 145px; right: 24px; height: 70px; z-index: 10;">
       <div style="height: 100%; background: ${accent}; padding: 3px; border-radius: 2px;">
         <div style="height: 100%; background: ${bg}; display: flex; align-items: center; justify-content: center; padding: 0 30px; border-radius: 2px;">
-          <span style="font-size: ${fontSize}px; font-weight: bold; color: white; letter-spacing: 0.8px; white-space: normal; overflow: visible; max-width: 100%; display: block; text-align: center; line-height: 1.3;">{{companyName}}</span>
+          <span style="color: white; font-weight: 700; font-size: ${fontSize}px; letter-spacing: 0.8px; text-align: center; line-height: 1.3; white-space: normal; overflow: visible; max-width: 100%; display: block;">{{companyName}}</span>
         </div>
       </div>
     </div>
