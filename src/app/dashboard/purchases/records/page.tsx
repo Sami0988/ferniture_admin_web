@@ -322,8 +322,6 @@ export default function PurchaseRecordsPage() {
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">Supplier</th>
                   <th className="pb-3 text-left text-xs font-semibold text-muted uppercase tracking-wider">FS Number</th>
                   <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Before VAT</th>
-                  <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">VAT</th>
-                  <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Withholding</th>
                   <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Total</th>
                   <th className="pb-3 text-right text-xs font-semibold text-muted uppercase tracking-wider">Actions</th>
                 </tr>
@@ -335,8 +333,6 @@ export default function PurchaseRecordsPage() {
                     <td className="py-3 text-sm font-medium text-foreground">{purchase.supplierName}</td>
                     <td className="py-3 text-sm text-muted font-mono">{purchase.fsNumber}</td>
                     <td className="py-3 text-sm text-right">{formatCurrency(purchase.amountBeforeVat)}</td>
-                    <td className="py-3 text-sm text-right">{formatCurrency(purchase.vatAmount)}</td>
-                    <td className="py-3 text-sm text-right">{formatCurrency(purchase.withholdingAmount)}</td>
                     <td className="py-3 text-sm text-right font-medium">{formatCurrency(purchase.totalAmount)}</td>
                     <td className="py-3">
                       <div className="flex items-center justify-end gap-1">
@@ -361,7 +357,7 @@ export default function PurchaseRecordsPage() {
                 ))}
                 {purchases.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-sm text-muted">
+                    <td colSpan={6} className="py-12 text-center text-sm text-muted">
                       {hasActiveFilters ? (
                         <p>No purchases match the current filters</p>
                       ) : (

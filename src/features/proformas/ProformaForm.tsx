@@ -87,9 +87,9 @@ export default function ProformaForm({ id }: ProformaFormProps) {
     discountAmount,
     items: items.map((item) => ({
       description: item.description,
-      quantity: item.quantity,
+      quantity: Number(item.quantity),
       unit: item.unit,
-      unitPrice: item.unitPrice,
+      unitPrice: Number(item.unitPrice),
       sortOrder: item.sortOrder,
     })),
   });
