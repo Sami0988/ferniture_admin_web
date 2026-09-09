@@ -413,7 +413,7 @@ export default function TaxReportPage() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted">
@@ -474,7 +474,7 @@ export default function TaxReportPage() {
           </div>
 
           {(report.breakdown?.purchases?.length ?? 0) === 0 && (report.breakdown?.workProjects?.length ?? 0) === 0 && (
-            <Card>
+            <Card className="mt-6">
               <div className="py-12 text-center text-sm text-muted">
                 {report.workProjects?.message || 'No purchases or projects recorded in this period.'}
               </div>
@@ -482,7 +482,7 @@ export default function TaxReportPage() {
           )}
 
           {(report.breakdown?.purchases?.length ?? 0) > 0 && (
-            <Card>
+            <Card className="mt-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Building2 className="h-4 w-4 text-muted" />
@@ -525,7 +525,7 @@ export default function TaxReportPage() {
           )}
 
           {(report.breakdown?.workProjects?.length ?? 0) > 0 && (
-            <Card>
+            <Card className="mt-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Building2 className="h-4 w-4 text-muted" />
@@ -566,7 +566,7 @@ export default function TaxReportPage() {
           )}
 
           {report.workProjects?.count === 0 && report.workProjects?.message && (report.breakdown?.purchases?.length ?? 0) > 0 && (
-            <Card>
+            <Card className="mt-6">
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Building2 className="h-4 w-4 text-muted" />
