@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useGetAboutPageQuery, useUpdateAboutPageMutation } from '@/store/api/aboutApi';
+import { useUploadImageMutation } from '@/store/api/uploadsApi';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
@@ -12,6 +13,7 @@ import toast from 'react-hot-toast';
 export default function AboutPage() {
   const { data: aboutData, isLoading } = useGetAboutPageQuery();
   const [updateAbout, { isLoading: isSaving }] = useUpdateAboutPageMutation();
+  const [uploadImage] = useUploadImageMutation();
 
   const about = aboutData?.data;
 
@@ -51,18 +53,25 @@ export default function AboutPage() {
 
   const handleSave = async () => {
     try {
+      let imageUrl: string | undefined;
+
+      if (formImage) {
+        const uploadResult = await uploadImage(formImage).unwrap();
+        imageUrl = uploadResult.data.url;
+      }
+
       const payload: Record<string, any> = {
         title: formTitle.trim(),
         description1: formDescription1.trim(),
         description2: formDescription2.trim(),
-        yearsOfExperience: formYearsOfExperience,
-        projectsCompleted: formProjectsCompleted,
-        countriesServed: formCountriesServed,
-        skilledArtisans: formSkilledArtisans,
+        yearsOfExperience: Number(formYearsOfExperience),
+        projectsCompleted: Number(formProjectsCompleted),
+        countriesServed: Number(formCountriesServed),
+        skilledArtisans: Number(formSkilledArtisans),
       };
-      if (formImage) payload.image = formImage;
+      if (imageUrl) payload.image = imageUrl;
 
-      await updateAbout(payload as any).unwrap();
+      await updateAbout(payload).unwrap();
       toast.success('About page updated');
       setFormImage(null);
     } catch (err: any) {
