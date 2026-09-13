@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useGetAboutPageQuery, useUpdateAboutPageMutation } from '@/store/api/aboutApi';
+import { useUploadImageMutation } from '@/store/api/uploadsApi';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
@@ -11,7 +12,9 @@ import toast from 'react-hot-toast';
 
 export default function AboutPage() {
   const { data: aboutData, isLoading } = useGetAboutPageQuery();
-  const [updateAbout, { isLoading: isSaving }] = useUpdateAboutPageMutation();
+  const [updateAbout] = useUpdateAboutPageMutation();
+  const [uploadImage] = useUploadImageMutation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const about = aboutData?.data;
 
@@ -50,7 +53,17 @@ export default function AboutPage() {
   };
 
   const handleSave = async () => {
+    setIsSubmitting(true);
     try {
+      let imageUrl: string | undefined;
+
+      if (formImage) {
+        toast.loading('Uploading image...', { id: 'upload' });
+        const uploadResult = await uploadImage(formImage).unwrap();
+        imageUrl = uploadResult.data.url;
+        toast.success('Image uploaded', { id: 'upload' });
+      }
+
       const payload: Record<string, any> = {
         title: formTitle.trim(),
         description1: formDescription1.trim(),
@@ -60,14 +73,16 @@ export default function AboutPage() {
         countriesServed: Number(formCountriesServed),
         skilledArtisans: Number(formSkilledArtisans),
       };
-      if (formImage) payload.image = formImage;
+      if (imageUrl) payload.imageUrl = imageUrl;
 
-      await updateAbout(payload as any).unwrap();
+      await updateAbout(payload).unwrap();
       toast.success('About page updated');
       setFormImage(null);
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to update about page';
       toast.error(message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -89,7 +104,7 @@ export default function AboutPage() {
           <h1 className="text-2xl font-bold text-foreground">About Page</h1>
           <p className="text-sm text-muted">Manage the content shown on your public about page</p>
         </div>
-        <Button onClick={handleSave} loading={isSaving} disabled={isSaving}>
+        <Button onClick={handleSave} loading={isSubmitting} disabled={isSubmitting}>
           <Save className="h-4 w-4" />
           Save Changes
         </Button>
