@@ -39,7 +39,7 @@ export default function AboutPage() {
       setFormProjectsCompleted(about.projectsCompleted || 0);
       setFormCountriesServed(about.countriesServed || 0);
       setFormSkilledArtisans(about.skilledArtisans || 0);
-      setImagePreview(about.image || '');
+      setImagePreview(about.imageUrl || '');
     }
   }, [about]);
 

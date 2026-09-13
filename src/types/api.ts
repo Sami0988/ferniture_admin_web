@@ -859,7 +859,7 @@ export interface AboutPage {
   projectsCompleted: number;
   countriesServed: number;
   skilledArtisans: number;
-  image: string;
+  imageUrl: string;
   createdAt: string;
   updatedAt: string;
 }
