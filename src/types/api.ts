@@ -752,11 +752,13 @@ export interface WebsiteGallery {
 export interface WebsiteTestimonial {
   id: string;
   customerName: string;
-  customerCompany?: string;
-  content: string;
+  company?: string;
+  projectId?: string;
   rating: number;
-  isApproved: boolean;
+  reviewText: string;
+  imageUrl?: string;
   isFeatured: boolean;
+  isApproved: boolean;
   createdAt: string;
 }
 
@@ -796,8 +798,9 @@ export interface WebsiteFaq {
 export interface CreateFaqRequest {
   question: string;
   answer: string;
-  category: string;
+  category?: string;
   sortOrder?: number;
+  isActive?: boolean;
 }
 
 export interface UpdateFaqRequest {
@@ -806,6 +809,163 @@ export interface UpdateFaqRequest {
   category?: string;
   sortOrder?: number;
   isActive?: boolean;
+}
+
+// ── Blog ────────────────────────────────────────────────────
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  category: string;
+  coverImage: string;
+  featureImages: string[];
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBlogPostRequest {
+  title: string;
+  slug?: string;
+  excerpt?: string;
+  content?: string;
+  category?: string;
+  isPublished?: boolean;
+  mainImage?: File;
+  featureImages?: File[];
+}
+
+export interface UpdateBlogPostRequest {
+  title?: string;
+  slug?: string;
+  excerpt?: string;
+  content?: string;
+  category?: string;
+  isPublished?: boolean;
+  mainImage?: File;
+  featureImages?: File[];
+}
+
+// ── About Page ─────────────────────────────────────────────
+export interface AboutPage {
+  id: string;
+  title: string;
+  description1: string;
+  description2: string;
+  yearsOfExperience: number;
+  projectsCompleted: number;
+  countriesServed: number;
+  skilledArtisans: number;
+  image: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateAboutRequest {
+  title?: string;
+  description1?: string;
+  description2?: string;
+  yearsOfExperience?: number;
+  projectsCompleted?: number;
+  countriesServed?: number;
+  skilledArtisans?: number;
+  image?: File;
+}
+
+// ── Services ───────────────────────────────────────────────
+export interface Service {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  bulletPoints: string[];
+  coverImage: string;
+  featureImages: string[];
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateServiceRequest {
+  title: string;
+  category: string;
+  description: string;
+  bulletPoints?: string[];
+  sortOrder?: number;
+  isActive?: boolean;
+  mainImage: File;
+  featureImages?: File[];
+}
+
+export interface UpdateServiceRequest {
+  title?: string;
+  category?: string;
+  description?: string;
+  bulletPoints?: string[];
+  sortOrder?: number;
+  isActive?: boolean;
+  mainImage?: File;
+  featureImages?: File[];
+}
+
+// ── Before/After ───────────────────────────────────────────
+export interface BeforeAfterPair {
+  id: string;
+  title: string;
+  beforeImage: string;
+  afterImage: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBeforeAfterRequest {
+  title?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  beforeImage: File;
+  afterImage: File;
+}
+
+export interface UpdateBeforeAfterRequest {
+  title?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  beforeImage?: File;
+  afterImage?: File;
+}
+
+// ── Contact Info ───────────────────────────────────────────
+export interface ContactInfo {
+  id: string;
+  address: string;
+  phone1: string;
+  phone2: string;
+  email: string;
+  weekdayHours: string;
+  saturdayHours: string;
+  mapUrl: string;
+  latitude: string;
+  longitude: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateContactInfoRequest {
+  address?: string;
+  phone1?: string;
+  phone2?: string;
+  email?: string;
+  weekdayHours?: string;
+  saturdayHours?: string;
+  mapUrl?: string;
+  latitude?: string;
+  longitude?: string;
 }
 
 // ── Company Settings ────────────────────────────────────────

@@ -23,6 +23,10 @@ import {
   Truck,
   Receipt,
   FileSpreadsheet,
+  HelpCircle,
+  Star,
+  Images,
+  MapPin,
 } from 'lucide-react';
 
 interface NavItem {
@@ -99,6 +103,20 @@ const navGroups: NavGroup[] = [
     icon: FileCode,
     items: [
       { href: '/dashboard/letter-templates', label: 'Letter Templates', icon: FileCode },
+    ],
+  },
+  {
+    id: 'website',
+    label: 'Website',
+    icon: HelpCircle,
+    items: [
+      { href: '/dashboard/about', label: 'About', icon: Users },
+      { href: '/dashboard/services', label: 'Services', icon: Hammer },
+      { href: '/dashboard/before-after', label: 'Before / After', icon: Images },
+      { href: '/dashboard/faqs', label: 'FAQs', icon: HelpCircle },
+      { href: '/dashboard/blog', label: 'Blog', icon: FileText },
+      { href: '/dashboard/testimonials', label: 'Testimonials', icon: Star },
+      { href: '/dashboard/contact-info', label: 'Contact Info', icon: MapPin },
     ],
   },
 ];

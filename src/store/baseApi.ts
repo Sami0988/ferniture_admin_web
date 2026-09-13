@@ -130,6 +130,11 @@ export const baseApi = createApi({
     'Purchase',
     'Calendar',
     'Proforma',
+    'BlogPost',
+    'About',
+    'Service',
+    'BeforeAfter',
+    'ContactInfo',
   ],
   endpoints: () => ({}),
 });

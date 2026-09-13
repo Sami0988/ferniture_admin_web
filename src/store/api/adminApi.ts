@@ -92,8 +92,15 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // Testimonials
-    getTestimonials: builder.query<ApiResponse<WebsiteTestimonial[]>, void>({
-      query: () => '/admin/testimonials',
+    getTestimonials: builder.query<PaginatedResponse<WebsiteTestimonial>, { page?: number; limit?: number }>({
+      query: (params) => ({
+        url: '/admin/testimonials',
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
+      }),
+      transformResponse: transformPaginatedResponse,
       providesTags: ['Testimonial'],
     }),
 
@@ -166,8 +173,15 @@ export const adminApi = baseApi.injectEndpoints({
     }),
 
     // FAQs
-    getFaqs: builder.query<ApiResponse<WebsiteFaq[]>, void>({
-      query: () => '/admin/faqs',
+    getFaqs: builder.query<PaginatedResponse<WebsiteFaq>, { page?: number; limit?: number }>({
+      query: (params) => ({
+        url: '/admin/faqs',
+        params: {
+          ...(params.page != null && { page: String(params.page) }),
+          ...(params.limit != null && { limit: String(params.limit) }),
+        },
+      }),
+      transformResponse: transformPaginatedResponse,
       providesTags: ['Faq'],
     }),
 
