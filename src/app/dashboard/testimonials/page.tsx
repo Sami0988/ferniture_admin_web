@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   useGetTestimonialsQuery,
+  useCreateTestimonialMutation,
   useApproveTestimonialMutation,
   useToggleTestimonialFeaturedMutation,
   useDeleteTestimonialMutation,
@@ -10,9 +11,12 @@ import {
 import { cn, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import SearchInput from '@/components/ui/SearchInput';
 import {
+  Plus,
   Star,
   StarHalf,
   CheckCircle,
@@ -65,6 +69,7 @@ export default function TestimonialsPage() {
   const [limit, setLimit] = useState(20);
 
   const { data: testimonialsData, isLoading } = useGetTestimonialsQuery({ page, limit });
+  const [createTestimonial, { isLoading: isCreating }] = useCreateTestimonialMutation();
   const [approveTestimonial] = useApproveTestimonialMutation();
   const [toggleFeatured] = useToggleTestimonialFeaturedMutation();
   const [deleteTestimonial, { isLoading: isDeleting }] = useDeleteTestimonialMutation();
@@ -99,6 +104,45 @@ export default function TestimonialsPage() {
   }, [search, statusFilter]);
 
   const [deletingTestimonial, setDeletingTestimonial] = useState<WebsiteTestimonial | null>(null);
+
+  // Create modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [formCustomerName, setFormCustomerName] = useState('');
+  const [formCompany, setFormCompany] = useState('');
+  const [formRating, setFormRating] = useState(5);
+  const [formReviewText, setFormReviewText] = useState('');
+
+  const resetCreateForm = () => {
+    setFormCustomerName('');
+    setFormCompany('');
+    setFormRating(5);
+    setFormReviewText('');
+  };
+
+  const handleCreate = async () => {
+    if (!formCustomerName.trim()) {
+      toast.error('Customer name is required');
+      return;
+    }
+    if (!formReviewText.trim()) {
+      toast.error('Review text is required');
+      return;
+    }
+    try {
+      await createTestimonial({
+        customerName: formCustomerName.trim(),
+        company: formCompany.trim() || undefined,
+        rating: formRating,
+        reviewText: formReviewText.trim(),
+      }).unwrap();
+      toast.success('Testimonial created');
+      setModalOpen(false);
+      resetCreateForm();
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Failed to create testimonial';
+      toast.error(message);
+    }
+  };
 
   const handleApprove = async (testimonial: WebsiteTestimonial) => {
     try {
@@ -149,15 +193,21 @@ export default function TestimonialsPage() {
             )}
           </p>
         </div>
-        <select
-          value={String(limit)}
-          onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
-          className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground"
-        >
-          <option value="10">10 per page</option>
-          <option value="20">20 per page</option>
-          <option value="50">50 per page</option>
-        </select>
+        <div className="flex items-center gap-3">
+          <select
+            value={String(limit)}
+            onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+            className="rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground"
+          >
+            <option value="10">10 per page</option>
+            <option value="20">20 per page</option>
+            <option value="50">50 per page</option>
+          </select>
+          <Button onClick={() => { resetCreateForm(); setModalOpen(true); }}>
+            <Plus className="h-4 w-4" />
+            Add Testimonial
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -342,6 +392,69 @@ export default function TestimonialsPage() {
           </div>
         </div>
       )}
+
+      {/* Create Modal */}
+      <Modal
+        open={modalOpen}
+        onClose={() => { setModalOpen(false); resetCreateForm(); }}
+        title="Add Testimonial"
+      >
+        <div className="space-y-4">
+          <Input
+            label="Customer Name *"
+            value={formCustomerName}
+            onChange={(e) => setFormCustomerName(e.target.value)}
+            placeholder="John Doe"
+          />
+          <Input
+            label="Company (optional)"
+            value={formCompany}
+            onChange={(e) => setFormCompany(e.target.value)}
+            placeholder="ABC Construction"
+          />
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Rating *</label>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setFormRating(star)}
+                  className="p-0.5"
+                >
+                  <Star
+                    className={cn(
+                      'h-6 w-6 transition-colors',
+                      star <= formRating
+                        ? 'fill-brand-gold text-brand-gold'
+                        : 'text-border hover:text-brand-gold/50'
+                    )}
+                  />
+                </button>
+              ))}
+              <span className="ml-2 text-sm text-muted">{formRating}/5</span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Review *</label>
+            <textarea
+              value={formReviewText}
+              onChange={(e) => setFormReviewText(e.target.value)}
+              placeholder="Excellent work! Highly recommended..."
+              rows={4}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => { setModalOpen(false); resetCreateForm(); }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} loading={isCreating} disabled={isCreating}>
+              Create Testimonial
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Delete Confirmation */}
       <ConfirmDialog
