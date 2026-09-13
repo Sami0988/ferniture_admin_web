@@ -872,7 +872,7 @@ export interface UpdateAboutRequest {
   projectsCompleted?: number;
   countriesServed?: number;
   skilledArtisans?: number;
-  image?: string;
+  image?: File;
 }
 
 // ── Services ───────────────────────────────────────────────

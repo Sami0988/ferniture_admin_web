@@ -9,11 +9,17 @@ export const aboutApi = baseApi.injectEndpoints({
     }),
 
     updateAboutPage: builder.mutation<ApiResponse<AboutPage>, UpdateAboutRequest>({
-      query: (body) => ({
-        url: '/admin/about',
-        method: 'PATCH',
-        body,
-      }),
+      query: (body) => {
+        const formData = new FormData();
+        Object.entries(body).forEach(([key, value]) => {
+          if (key === 'image' && value instanceof File) {
+            formData.append('image', value);
+          } else if (value !== undefined && value !== null) {
+            formData.append(key, String(value));
+          }
+        });
+        return { url: '/admin/about', method: 'PATCH', body: formData };
+      },
       invalidatesTags: ['About'],
     }),
   }),
