@@ -109,6 +109,7 @@ export const adminApi = baseApi.injectEndpoints({
       company?: string;
       rating: number;
       reviewText: string;
+      translations?: Record<string, Record<string, any>>;
     }>({
       query: (body) => ({
         url: '/website/testimonials',

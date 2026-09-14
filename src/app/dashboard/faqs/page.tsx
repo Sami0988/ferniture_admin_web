@@ -15,6 +15,8 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import SearchInput from '@/components/ui/SearchInput';
 import { HelpCircle, Plus, Pencil, Trash2, GripVertical, CheckCircle, XCircle } from 'lucide-react';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { WebsiteFaq } from '@/types/api';
@@ -64,6 +66,8 @@ export default function FaqsPage() {
   const [formAnswer, setFormAnswer] = useState('');
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   // Delete state
   const [deletingFaq, setDeletingFaq] = useState<WebsiteFaq | null>(null);
@@ -73,7 +77,26 @@ export default function FaqsPage() {
     setFormAnswer('');
     setFormSortOrder(0);
     setFormIsActive(true);
+    setFormLocale('en');
+    setFormTranslations({});
     setEditingFaq(null);
+  };
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'question') setFormQuestion(value);
+      else if (field === 'answer') setFormAnswer(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
   };
 
   const openCreateModal = () => {
@@ -87,6 +110,8 @@ export default function FaqsPage() {
     setFormAnswer(faq.answer);
     setFormSortOrder(faq.sortOrder);
     setFormIsActive(faq.isActive);
+    setFormLocale('en');
+    setFormTranslations((faq as any).translations || {});
     setModalOpen(true);
   };
 
@@ -109,6 +134,7 @@ export default function FaqsPage() {
             answer: formAnswer.trim(),
             sortOrder: formSortOrder,
             isActive: formIsActive,
+            translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
           },
         }).unwrap();
         toast.success('FAQ updated successfully');
@@ -118,6 +144,7 @@ export default function FaqsPage() {
           answer: formAnswer.trim(),
           sortOrder: formSortOrder,
           isActive: formIsActive,
+          translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
         }).unwrap();
         toast.success('FAQ created successfully');
       }
@@ -326,17 +353,20 @@ export default function FaqsPage() {
         title={editingFaq ? 'Edit FAQ' : 'Add FAQ'}
       >
         <div className="space-y-4">
+          <TranslationTabs locale={formLocale} onChange={setFormLocale} />
           <Input
-            label="Question *"
-            value={formQuestion}
-            onChange={(e) => setFormQuestion(e.target.value)}
+            label={formLocale === 'en' ? 'Question *' : 'Question * (Amharic)'}
+            value={getFormValue('question', formQuestion)}
+            onChange={(e) => setFormValue('question', e.target.value)}
             placeholder="How long does a custom order take?"
           />
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Answer *</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              {formLocale === 'en' ? 'Answer *' : 'Answer * (Amharic)'}
+            </label>
             <textarea
-              value={formAnswer}
-              onChange={(e) => setFormAnswer(e.target.value)}
+              value={getFormValue('answer', formAnswer)}
+              onChange={(e) => setFormValue('answer', e.target.value)}
               placeholder="Typically 2-4 weeks depending on complexity..."
               rows={4}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"

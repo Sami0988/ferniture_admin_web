@@ -26,6 +26,8 @@ import {
   GripVertical,
   List,
 } from 'lucide-react';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { Service } from '@/types/api';
@@ -90,6 +92,8 @@ export default function ServicesPage() {
   const [formBulletPoints, setFormBulletPoints] = useState('');
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   // Image refs
   const mainImageInputRef = useRef<HTMLInputElement>(null);
@@ -108,11 +112,31 @@ export default function ServicesPage() {
     setFormBulletPoints('');
     setFormSortOrder(0);
     setFormIsActive(true);
+    setFormLocale('en');
+    setFormTranslations({});
     setFormMainImage(null);
     setMainImagePreview('');
     setFormFeatureImages([]);
     setFeatureImagePreviews([]);
     setEditingService(null);
+  };
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'title') setFormTitle(value);
+      else if (field === 'description') setFormDescription(value);
+      else if (field === 'bulletPoints') setFormBulletPoints(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
   };
 
   const openCreateModal = () => {
@@ -128,6 +152,8 @@ export default function ServicesPage() {
     setFormBulletPoints(service.bulletPoints?.join('\n') || '');
     setFormSortOrder(service.sortOrder);
     setFormIsActive(service.isActive);
+    setFormLocale('en');
+    setFormTranslations((service as any).translations || {});
     setFormMainImage(null);
     setMainImagePreview(service.coverImage || '');
     setFormFeatureImages([]);
@@ -192,6 +218,7 @@ export default function ServicesPage() {
         bulletPoints: bulletPoints.length > 0 ? bulletPoints : undefined,
         sortOrder: formSortOrder,
         isActive: formIsActive,
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       };
       if (formMainImage) payload.mainImage = formMainImage;
       if (formFeatureImages.length > 0) payload.featureImages = formFeatureImages;
@@ -465,10 +492,11 @@ export default function ServicesPage() {
         size="lg"
       >
         <div className="space-y-4">
+          <TranslationTabs locale={formLocale} onChange={setFormLocale} />
           <Input
-            label="Title *"
-            value={formTitle}
-            onChange={(e) => setFormTitle(e.target.value)}
+            label={formLocale === 'en' ? 'Title *' : 'Title * (Amharic)'}
+            value={getFormValue('title', formTitle)}
+            onChange={(e) => setFormValue('title', e.target.value)}
             placeholder="Custom Furniture & Woodwork"
           />
           <div>
@@ -492,20 +520,24 @@ export default function ServicesPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Description *</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              {formLocale === 'en' ? 'Description *' : 'Description * (Amharic)'}
+            </label>
             <textarea
-              value={formDescription}
-              onChange={(e) => setFormDescription(e.target.value)}
+              value={getFormValue('description', formDescription)}
+              onChange={(e) => setFormValue('description', e.target.value)}
               placeholder="Handcrafted furniture and woodwork — from dining tables and wardrobes to built-in cabinetry..."
               rows={4}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-y"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Bullet Points (one per line)</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              {formLocale === 'en' ? 'Bullet Points (one per line)' : 'Bullet Points (one per line, Amharic)'}
+            </label>
             <textarea
-              value={formBulletPoints}
-              onChange={(e) => setFormBulletPoints(e.target.value)}
+              value={getFormValue('bulletPoints', formBulletPoints)}
+              onChange={(e) => setFormValue('bulletPoints', e.target.value)}
               placeholder={"Custom furniture design\nBuilt-in cabinetry\nWood paneling & molding\nRestoration & refinishing"}
               rows={4}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-y"

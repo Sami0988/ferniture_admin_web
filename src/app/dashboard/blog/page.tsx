@@ -26,6 +26,8 @@ import {
   X,
   FileText,
 } from 'lucide-react';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { BlogPost } from '@/types/api';
@@ -89,6 +91,8 @@ export default function BlogPage() {
   const [formContent, setFormContent] = useState('');
   const [formCategory, setFormCategory] = useState('general');
   const [formIsPublished, setFormIsPublished] = useState(false);
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   // Image refs
   const mainImageInputRef = useRef<HTMLInputElement>(null);
@@ -106,11 +110,31 @@ export default function BlogPage() {
     setFormContent('');
     setFormCategory('general');
     setFormIsPublished(false);
+    setFormLocale('en');
+    setFormTranslations({});
     setFormMainImage(null);
     setMainImagePreview('');
     setFormFeatureImages([]);
     setFeatureImagePreviews([]);
     setEditingPost(null);
+  };
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'title') setFormTitle(value);
+      else if (field === 'excerpt') setFormExcerpt(value);
+      else if (field === 'content') setFormContent(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
   };
 
   const openCreateModal = () => {
@@ -125,6 +149,8 @@ export default function BlogPage() {
     setFormContent(post.content || '');
     setFormCategory(post.category || 'general');
     setFormIsPublished(post.isPublished);
+    setFormLocale('en');
+    setFormTranslations((post as any).translations || {});
     setFormMainImage(null);
     setMainImagePreview(post.coverImage || '');
     setFormFeatureImages([]);
@@ -175,6 +201,7 @@ export default function BlogPage() {
         content: formContent,
         category: formCategory,
         isPublished: formIsPublished,
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       };
       if (formMainImage) payload.mainImage = formMainImage;
       if (formFeatureImages.length > 0) payload.featureImages = formFeatureImages;
@@ -446,23 +473,26 @@ export default function BlogPage() {
         size="lg"
       >
         <div className="space-y-4">
+          <TranslationTabs locale={formLocale} onChange={setFormLocale} />
           <Input
-            label="Title *"
-            value={formTitle}
-            onChange={(e) => setFormTitle(e.target.value)}
+            label={formLocale === 'en' ? 'Title *' : 'Title * (Amharic)'}
+            value={getFormValue('title', formTitle)}
+            onChange={(e) => setFormValue('title', e.target.value)}
             placeholder="Choosing the Right Wood"
           />
           <Input
-            label="Excerpt"
-            value={formExcerpt}
-            onChange={(e) => setFormExcerpt(e.target.value)}
+            label={formLocale === 'en' ? 'Excerpt' : 'Excerpt (Amharic)'}
+            value={getFormValue('excerpt', formExcerpt)}
+            onChange={(e) => setFormValue('excerpt', e.target.value)}
             placeholder="A short summary for the card..."
           />
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">Content</label>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              {formLocale === 'en' ? 'Content' : 'Content (Amharic)'}
+            </label>
             <textarea
-              value={formContent}
-              onChange={(e) => setFormContent(e.target.value)}
+              value={getFormValue('content', formContent)}
+              onChange={(e) => setFormValue('content', e.target.value)}
               placeholder="Write your blog post content here. HTML is supported..."
               rows={10}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground font-mono placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-y"

@@ -801,6 +801,7 @@ export interface CreateFaqRequest {
   category?: string;
   sortOrder?: number;
   isActive?: boolean;
+  translations?: Record<string, Record<string, any>>;
 }
 
 export interface UpdateFaqRequest {
@@ -809,6 +810,7 @@ export interface UpdateFaqRequest {
   category?: string;
   sortOrder?: number;
   isActive?: boolean;
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── Blog ────────────────────────────────────────────────────
@@ -836,6 +838,7 @@ export interface CreateBlogPostRequest {
   isPublished?: boolean;
   mainImage?: File;
   featureImages?: File[];
+  translations?: Record<string, Record<string, any>>;
 }
 
 export interface UpdateBlogPostRequest {
@@ -847,6 +850,7 @@ export interface UpdateBlogPostRequest {
   isPublished?: boolean;
   mainImage?: File;
   featureImages?: File[];
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── About Page ─────────────────────────────────────────────
@@ -873,6 +877,7 @@ export interface UpdateAboutRequest {
   countriesServed?: number;
   skilledArtisans?: number;
   imageUrl?: string;
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── Services ───────────────────────────────────────────────
@@ -899,6 +904,7 @@ export interface CreateServiceRequest {
   isActive?: boolean;
   mainImage: File;
   featureImages?: File[];
+  translations?: Record<string, Record<string, any>>;
 }
 
 export interface UpdateServiceRequest {
@@ -910,6 +916,7 @@ export interface UpdateServiceRequest {
   isActive?: boolean;
   mainImage?: File;
   featureImages?: File[];
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── Before/After ───────────────────────────────────────────
@@ -930,6 +937,7 @@ export interface CreateBeforeAfterRequest {
   isActive?: boolean;
   beforeImage: File;
   afterImage: File;
+  translations?: Record<string, Record<string, any>>;
 }
 
 export interface UpdateBeforeAfterRequest {
@@ -938,6 +946,7 @@ export interface UpdateBeforeAfterRequest {
   isActive?: boolean;
   beforeImage?: File;
   afterImage?: File;
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── Contact Info ───────────────────────────────────────────
@@ -966,6 +975,7 @@ export interface UpdateContactInfoRequest {
   mapUrl?: string;
   latitude?: string;
   longitude?: string;
+  translations?: Record<string, Record<string, any>>;
 }
 
 // ── Company Settings ────────────────────────────────────────

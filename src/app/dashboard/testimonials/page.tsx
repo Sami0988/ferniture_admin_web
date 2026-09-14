@@ -25,6 +25,8 @@ import {
   Sparkles,
   Quote,
 } from 'lucide-react';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { WebsiteTestimonial } from '@/types/api';
@@ -111,12 +113,34 @@ export default function TestimonialsPage() {
   const [formCompany, setFormCompany] = useState('');
   const [formRating, setFormRating] = useState(5);
   const [formReviewText, setFormReviewText] = useState('');
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   const resetCreateForm = () => {
     setFormCustomerName('');
     setFormCompany('');
     setFormRating(5);
     setFormReviewText('');
+    setFormLocale('en');
+    setFormTranslations({});
+  };
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'customerName') setFormCustomerName(value);
+      else if (field === 'company') setFormCompany(value);
+      else if (field === 'reviewText') setFormReviewText(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
   };
 
   const handleCreate = async () => {
@@ -134,6 +158,7 @@ export default function TestimonialsPage() {
         company: formCompany.trim() || undefined,
         rating: formRating,
         reviewText: formReviewText.trim(),
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       }).unwrap();
       toast.success('Testimonial created');
       setModalOpen(false);
@@ -400,16 +425,17 @@ export default function TestimonialsPage() {
         title="Add Testimonial"
       >
         <div className="space-y-4">
+          <TranslationTabs locale={formLocale} onChange={setFormLocale} />
           <Input
-            label="Customer Name *"
-            value={formCustomerName}
-            onChange={(e) => setFormCustomerName(e.target.value)}
+            label={formLocale === 'en' ? 'Customer Name *' : 'Customer Name * (Amharic)'}
+            value={getFormValue('customerName', formCustomerName)}
+            onChange={(e) => setFormValue('customerName', e.target.value)}
             placeholder="John Doe"
           />
           <Input
-            label="Company (optional)"
-            value={formCompany}
-            onChange={(e) => setFormCompany(e.target.value)}
+            label={formLocale === 'en' ? 'Company (optional)' : 'Company (optional, Amharic)'}
+            value={getFormValue('company', formCompany)}
+            onChange={(e) => setFormValue('company', e.target.value)}
             placeholder="ABC Construction"
           />
           <div>
@@ -438,8 +464,8 @@ export default function TestimonialsPage() {
           <div>
             <label className="block text-sm font-medium text-foreground mb-1.5">Review *</label>
             <textarea
-              value={formReviewText}
-              onChange={(e) => setFormReviewText(e.target.value)}
+              value={getFormValue('reviewText', formReviewText)}
+              onChange={(e) => setFormValue('reviewText', e.target.value)}
               placeholder="Excellent work! Highly recommended..."
               rows={4}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"

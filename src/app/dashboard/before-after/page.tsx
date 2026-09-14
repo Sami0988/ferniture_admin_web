@@ -23,6 +23,8 @@ import {
   X,
   ArrowRight,
 } from 'lucide-react';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { BeforeAfterPair } from '@/types/api';
@@ -61,6 +63,8 @@ export default function BeforeAfterPage() {
   const [formTitle, setFormTitle] = useState('');
   const [formSortOrder, setFormSortOrder] = useState(0);
   const [formIsActive, setFormIsActive] = useState(true);
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   // Image refs
   const beforeImageInputRef = useRef<HTMLInputElement>(null);
@@ -76,11 +80,29 @@ export default function BeforeAfterPage() {
     setFormTitle('');
     setFormSortOrder(0);
     setFormIsActive(true);
+    setFormLocale('en');
+    setFormTranslations({});
     setFormBeforeImage(null);
     setBeforeImagePreview('');
     setFormAfterImage(null);
     setAfterImagePreview('');
     setEditingPair(null);
+  };
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'title') setFormTitle(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
   };
 
   const openCreateModal = () => {
@@ -93,6 +115,8 @@ export default function BeforeAfterPage() {
     setFormTitle(pair.title || '');
     setFormSortOrder(pair.sortOrder);
     setFormIsActive(pair.isActive);
+    setFormLocale('en');
+    setFormTranslations((pair as any).translations || {});
     setFormBeforeImage(null);
     setBeforeImagePreview(pair.beforeImage || '');
     setFormAfterImage(null);
@@ -133,6 +157,7 @@ export default function BeforeAfterPage() {
         title: formTitle.trim() || undefined,
         sortOrder: formSortOrder,
         isActive: formIsActive,
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       };
       if (formBeforeImage) payload.beforeImage = formBeforeImage;
       if (formAfterImage) payload.afterImage = formAfterImage;
@@ -377,10 +402,11 @@ export default function BeforeAfterPage() {
         size="lg"
       >
         <div className="space-y-4">
+          <TranslationTabs locale={formLocale} onChange={setFormLocale} />
           <Input
-            label="Title (optional)"
-            value={formTitle}
-            onChange={(e) => setFormTitle(e.target.value)}
+            label={formLocale === 'en' ? 'Title (optional)' : 'Title (optional, Amharic)'}
+            value={getFormValue('title', formTitle)}
+            onChange={(e) => setFormValue('title', e.target.value)}
             placeholder="Kitchen Renovation"
           />
           <Input

@@ -5,6 +5,8 @@ import { useGetContactInfoQuery, useUpdateContactInfoMutation } from '@/store/ap
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { Save, MapPin, Phone, Mail, Clock, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -25,6 +27,8 @@ export default function ContactInfoPage() {
   const [formMapUrl, setFormMapUrl] = useState('');
   const [formLatitude, setFormLatitude] = useState('');
   const [formLongitude, setFormLongitude] = useState('');
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     if (contact) {
@@ -37,8 +41,27 @@ export default function ContactInfoPage() {
       setFormMapUrl(contact.mapUrl || '');
       setFormLatitude(contact.latitude || '');
       setFormLongitude(contact.longitude || '');
+      setFormTranslations((contact as any).translations || {});
     }
   }, [contact]);
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'address') setFormAddress(value);
+      else if (field === 'weekdayHours') setFormWeekdayHours(value);
+      else if (field === 'saturdayHours') setFormSaturdayHours(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -52,6 +75,7 @@ export default function ContactInfoPage() {
         mapUrl: formMapUrl.trim(),
         latitude: formLatitude.trim(),
         longitude: formLongitude.trim(),
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       }).unwrap();
       toast.success('Contact info updated');
     } catch (err: any) {
@@ -94,11 +118,14 @@ export default function ContactInfoPage() {
               <h2 className="text-lg font-semibold text-foreground">Visit Us</h2>
             </div>
             <div className="space-y-4">
+              <TranslationTabs locale={formLocale} onChange={setFormLocale} />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Address</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  {formLocale === 'en' ? 'Address' : 'Address (Amharic)'}
+                </label>
                 <textarea
-                  value={formAddress}
-                  onChange={(e) => setFormAddress(e.target.value)}
+                  value={getFormValue('address', formAddress)}
+                  onChange={(e) => setFormValue('address', e.target.value)}
                   placeholder="Kotebe Hanamaryam Church, Addis Ababa, Ethiopia"
                   rows={2}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"
@@ -152,15 +179,15 @@ export default function ContactInfoPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Weekday Hours"
-                value={formWeekdayHours}
-                onChange={(e) => setFormWeekdayHours(e.target.value)}
+                label={formLocale === 'en' ? 'Weekday Hours' : 'Weekday Hours (Amharic)'}
+                value={getFormValue('weekdayHours', formWeekdayHours)}
+                onChange={(e) => setFormValue('weekdayHours', e.target.value)}
                 placeholder="Mon – Fri: 8:00 AM – 6:00 PM"
               />
               <Input
-                label="Saturday Hours"
-                value={formSaturdayHours}
-                onChange={(e) => setFormSaturdayHours(e.target.value)}
+                label={formLocale === 'en' ? 'Saturday Hours' : 'Saturday Hours (Amharic)'}
+                value={getFormValue('saturdayHours', formSaturdayHours)}
+                onChange={(e) => setFormValue('saturdayHours', e.target.value)}
                 placeholder="Sat: 8:00 AM – 1:00 PM"
               />
             </div>

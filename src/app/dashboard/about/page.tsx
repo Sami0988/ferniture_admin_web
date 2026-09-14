@@ -6,6 +6,8 @@ import { useUploadImageMutation } from '@/store/api/uploadsApi';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
+import TranslationTabs from '@/components/ui/TranslationTabs';
+import type { Locale } from '@/components/ui/TranslationTabs';
 import { ImageIcon, X, Save } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -29,6 +31,8 @@ export default function AboutPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [formImage, setFormImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [formLocale, setFormLocale] = useState<Locale>('en');
+  const [formTranslations, setFormTranslations] = useState<Record<string, Record<string, string>>>({});
 
   useEffect(() => {
     if (about) {
@@ -40,8 +44,27 @@ export default function AboutPage() {
       setFormCountriesServed(about.countriesServed || 0);
       setFormSkilledArtisans(about.skilledArtisans || 0);
       setImagePreview(about.imageUrl || '');
+      setFormTranslations((about as any).translations || {});
     }
   }, [about]);
+
+  const getFormValue = (field: string, enValue: string) => {
+    if (formLocale === 'en') return enValue;
+    return formTranslations[formLocale]?.[field] || '';
+  };
+
+  const setFormValue = (field: string, value: string) => {
+    if (formLocale === 'en') {
+      if (field === 'title') setFormTitle(value);
+      else if (field === 'description1') setFormDescription1(value);
+      else if (field === 'description2') setFormDescription2(value);
+    } else {
+      setFormTranslations((prev) => ({
+        ...prev,
+        [formLocale]: { ...prev[formLocale], [field]: value },
+      }));
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -72,6 +95,7 @@ export default function AboutPage() {
         projectsCompleted: Number(formProjectsCompleted),
         countriesServed: Number(formCountriesServed),
         skilledArtisans: Number(formSkilledArtisans),
+        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
       };
       if (imageUrl) payload.imageUrl = imageUrl;
 
@@ -116,27 +140,32 @@ export default function AboutPage() {
           <Card className="p-6">
             <h2 className="text-lg font-semibold text-foreground mb-4">Content</h2>
             <div className="space-y-4">
+              <TranslationTabs locale={formLocale} onChange={setFormLocale} />
               <Input
-                label="Page Title"
-                value={formTitle}
-                onChange={(e) => setFormTitle(e.target.value)}
+                label={formLocale === 'en' ? 'Page Title' : 'Page Title (Amharic)'}
+                value={getFormValue('title', formTitle)}
+                onChange={(e) => setFormValue('title', e.target.value)}
                 placeholder="About Our Company"
               />
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Description 1</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  {formLocale === 'en' ? 'Description 1' : 'Description 1 (Amharic)'}
+                </label>
                 <textarea
-                  value={formDescription1}
-                  onChange={(e) => setFormDescription1(e.target.value)}
+                  value={getFormValue('description1', formDescription1)}
+                  onChange={(e) => setFormValue('description1', e.target.value)}
                   placeholder="First paragraph about your company..."
                   rows={5}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-y"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Description 2</label>
+                <label className="block text-sm font-medium text-foreground mb-1.5">
+                  {formLocale === 'en' ? 'Description 2' : 'Description 2 (Amharic)'}
+                </label>
                 <textarea
-                  value={formDescription2}
-                  onChange={(e) => setFormDescription2(e.target.value)}
+                  value={getFormValue('description2', formDescription2)}
+                  onChange={(e) => setFormValue('description2', e.target.value)}
                   placeholder="Second paragraph about your company..."
                   rows={5}
                   className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-y"
