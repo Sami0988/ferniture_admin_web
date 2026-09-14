@@ -14,7 +14,7 @@ function buildCustomerFormData(data: Record<string, any>): FormData {
     if (key === 'image' && value instanceof File) {
       formData.append('image', value);
     } else if (value !== undefined && value !== null && value !== '') {
-      formData.append(key, String(value));
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
   });
   return formData;

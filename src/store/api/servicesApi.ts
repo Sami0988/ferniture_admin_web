@@ -18,7 +18,7 @@ function buildServiceFormData(data: Record<string, any>): FormData {
     } else if (key === 'bulletPoints' && Array.isArray(value)) {
       formData.append('bulletPoints', JSON.stringify(value));
     } else if (value !== undefined && value !== null) {
-      formData.append(key, String(value));
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
   });
   return formData;

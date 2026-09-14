@@ -23,7 +23,7 @@ function buildMaterialFormData(data: Record<string, any>): FormData {
         }
       });
     } else if (key !== 'swatchImage' && key !== 'images' && value !== undefined && value !== null && value !== '') {
-      formData.append(key, String(value));
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
   });
   return formData;

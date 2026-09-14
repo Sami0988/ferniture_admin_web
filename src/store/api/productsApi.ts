@@ -14,7 +14,7 @@ function buildProductFormData(data: Record<string, any>): FormData {
     } else if (key === 'featureImages' && Array.isArray(value)) {
       value.forEach((file: File) => formData.append('featureImages', file));
     } else if (value !== undefined && value !== null) {
-      formData.append(key, String(value));
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
   });
   return formData;

@@ -16,7 +16,7 @@ function buildBeforeAfterFormData(data: Record<string, any>): FormData {
     } else if (key === 'afterImage' && value instanceof File) {
       formData.append('afterImage', value);
     } else if (value !== undefined && value !== null) {
-      formData.append(key, String(value));
+      formData.append(key, typeof value === 'object' ? JSON.stringify(value) : String(value));
     }
   });
   return formData;
