@@ -119,6 +119,24 @@ export const adminApi = baseApi.injectEndpoints({
       invalidatesTags: ['Testimonial'],
     }),
 
+    updateTestimonial: builder.mutation<ApiResponse<WebsiteTestimonial>, {
+      id: string;
+      data: {
+        customerName?: string;
+        company?: string;
+        rating?: number;
+        reviewText?: string;
+        translations?: Record<string, Record<string, any>>;
+      };
+    }>({
+      query: ({ id, data }) => ({
+        url: `/admin/testimonials/${id}`,
+        method: 'PATCH',
+        body: data,
+      }),
+      invalidatesTags: ['Testimonial'],
+    }),
+
     approveTestimonial: builder.mutation<ApiResponse<WebsiteTestimonial>, string>({
       query: (id) => ({
         url: `/admin/testimonials/${id}/approve`,
@@ -239,6 +257,7 @@ export const {
   useDeleteGalleryImageMutation,
   useGetTestimonialsQuery,
   useCreateTestimonialMutation,
+  useUpdateTestimonialMutation,
   useApproveTestimonialMutation,
   useToggleTestimonialFeaturedMutation,
   useDeleteTestimonialMutation,

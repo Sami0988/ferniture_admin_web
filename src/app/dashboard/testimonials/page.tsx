@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   useGetTestimonialsQuery,
   useCreateTestimonialMutation,
+  useUpdateTestimonialMutation,
   useApproveTestimonialMutation,
   useToggleTestimonialFeaturedMutation,
   useDeleteTestimonialMutation,
@@ -24,6 +25,7 @@ import {
   Trash2,
   Sparkles,
   Quote,
+  Pencil,
 } from 'lucide-react';
 import TranslationTabs from '@/components/ui/TranslationTabs';
 import type { Locale } from '@/components/ui/TranslationTabs';
@@ -72,6 +74,7 @@ export default function TestimonialsPage() {
 
   const { data: testimonialsData, isLoading } = useGetTestimonialsQuery({ page, limit });
   const [createTestimonial, { isLoading: isCreating }] = useCreateTestimonialMutation();
+  const [updateTestimonial, { isLoading: isUpdating }] = useUpdateTestimonialMutation();
   const [approveTestimonial] = useApproveTestimonialMutation();
   const [toggleFeatured] = useToggleTestimonialFeaturedMutation();
   const [deleteTestimonial, { isLoading: isDeleting }] = useDeleteTestimonialMutation();
@@ -106,6 +109,7 @@ export default function TestimonialsPage() {
   }, [search, statusFilter]);
 
   const [deletingTestimonial, setDeletingTestimonial] = useState<WebsiteTestimonial | null>(null);
+  const [editingTestimonial, setEditingTestimonial] = useState<WebsiteTestimonial | null>(null);
 
   // Create modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -153,20 +157,46 @@ export default function TestimonialsPage() {
       return;
     }
     try {
-      await createTestimonial({
-        customerName: formCustomerName.trim(),
-        company: formCompany.trim() || undefined,
-        rating: formRating,
-        reviewText: formReviewText.trim(),
-        translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
-      }).unwrap();
-      toast.success('Testimonial created');
+      if (editingTestimonial) {
+        await updateTestimonial({
+          id: editingTestimonial.id,
+          data: {
+            customerName: formCustomerName.trim(),
+            company: formCompany.trim() || undefined,
+            rating: formRating,
+            reviewText: formReviewText.trim(),
+            translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
+          },
+        }).unwrap();
+        toast.success('Testimonial updated');
+      } else {
+        await createTestimonial({
+          customerName: formCustomerName.trim(),
+          company: formCompany.trim() || undefined,
+          rating: formRating,
+          reviewText: formReviewText.trim(),
+          translations: Object.keys(formTranslations).length > 0 ? formTranslations : undefined,
+        }).unwrap();
+        toast.success('Testimonial created');
+      }
       setModalOpen(false);
+      setEditingTestimonial(null);
       resetCreateForm();
     } catch (err: any) {
-      const message = err?.data?.message || err?.message || 'Failed to create testimonial';
+      const message = err?.data?.message || err?.message || 'Failed to save testimonial';
       toast.error(message);
     }
+  };
+
+  const handleEdit = (testimonial: WebsiteTestimonial) => {
+    setEditingTestimonial(testimonial);
+    setFormCustomerName(testimonial.customerName);
+    setFormCompany(testimonial.company || '');
+    setFormRating(testimonial.rating);
+    setFormReviewText(testimonial.reviewText);
+    setFormLocale('en');
+    setFormTranslations((testimonial as any).translations || {});
+    setModalOpen(true);
   };
 
   const handleApprove = async (testimonial: WebsiteTestimonial) => {
@@ -327,6 +357,14 @@ export default function TestimonialsPage() {
                   </td>
                   <td className="py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(t)}
+                        title="Edit testimonial"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                       {!t.isApproved && (
                         <Button variant="secondary" size="sm" onClick={() => handleApprove(t)}>
                           Approve
@@ -418,11 +456,11 @@ export default function TestimonialsPage() {
         </div>
       )}
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       <Modal
         open={modalOpen}
-        onClose={() => { setModalOpen(false); resetCreateForm(); }}
-        title="Add Testimonial"
+        onClose={() => { setModalOpen(false); setEditingTestimonial(null); resetCreateForm(); }}
+        title={editingTestimonial ? 'Edit Testimonial' : 'Add Testimonial'}
       >
         <div className="space-y-4">
           <TranslationTabs locale={formLocale} onChange={setFormLocale} />
@@ -472,11 +510,11 @@ export default function TestimonialsPage() {
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => { setModalOpen(false); resetCreateForm(); }}>
+            <Button variant="secondary" onClick={() => { setModalOpen(false); setEditingTestimonial(null); resetCreateForm(); }}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} loading={isCreating} disabled={isCreating}>
-              Create Testimonial
+            <Button onClick={handleCreate} loading={isCreating || isUpdating} disabled={isCreating || isUpdating}>
+              {editingTestimonial ? 'Save Changes' : 'Create Testimonial'}
             </Button>
           </div>
         </div>
