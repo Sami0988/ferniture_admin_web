@@ -767,7 +767,7 @@ export interface WebsiteContact {
   name: string;
   email: string;
   phone?: string;
-  subject: string;
+  subject?: string;
   message: string;
   status: 'new' | 'read' | 'replied' | 'archived';
   createdAt: string;
@@ -778,9 +778,9 @@ export interface WebsiteQuote {
   name: string;
   email: string;
   phone: string;
-  serviceType: string;
+  division?: string;
   description: string;
-  status: 'pending' | 'contacted' | 'quoted' | 'closed';
+  status: 'new' | 'read' | 'replied' | 'archived';
   createdAt: string;
 }
 

@@ -116,6 +116,8 @@ const navGroups: NavGroup[] = [
       { href: '/dashboard/faqs', label: 'FAQs', icon: HelpCircle },
       { href: '/dashboard/blog', label: 'Blog', icon: FileText },
       { href: '/dashboard/testimonials', label: 'Testimonials', icon: Star },
+      { href: '/dashboard/contacts', label: 'Contact Messages', icon: Mail },
+      { href: '/dashboard/quotes', label: 'Quote Requests', icon: FileText },
       { href: '/dashboard/contact-info', label: 'Contact Info', icon: MapPin },
     ],
   },
