@@ -34,6 +34,13 @@ const paymentMethods: { value: ProjectPaymentMethod; label: string }[] = [
   { value: 'cbe_birr', label: 'CBE Birr' },
 ];
 
+const toLocalISODate = (date: Date = new Date()) => {
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 10);
+};
+
+const toISODateTime = (dateStr: string) => new Date(`${dateStr}T12:00:00`).toISOString();
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -70,6 +77,11 @@ export default function ProjectDetailPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<ProjectPaymentMethod>('cash');
   const [paymentNote, setPaymentNote] = useState('');
+  const [paymentDate, setPaymentDate] = useState(() => toLocalISODate());
+
+  const [paidModalOpen, setPaidModalOpen] = useState(false);
+  const [paidDate, setPaidDate] = useState(() => toLocalISODate());
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const [letterModalOpen, setLetterModalOpen] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
@@ -92,21 +104,46 @@ export default function ProjectDetailPage() {
   const nextStatuses = project ? validTransitions[project.status] : [];
 
   const handleStatusChange = async (newStatus: ProjectStatus) => {
+    if (newStatus === 'paid') {
+      setPaidDate(toLocalISODate());
+      setPaidModalOpen(true);
+      return;
+    }
+
     try {
       await updateProjectStatus({ id: projectId, data: { status: newStatus } }).unwrap();
       toast.success(`Status updated to ${newStatus.replace('_', ' ')}`);
-      if (newStatus === 'paid') {
-        try {
-          await createInvoiceFromProject(projectId).unwrap();
-          toast.success('Invoice created with 15% VAT', { duration: 4000 });
-        } catch (invoiceErr: any) {
-          const msg = invoiceErr?.data?.message || invoiceErr?.message || 'Failed to create invoice';
-          toast.error(msg);
-        }
+    } catch (err: any) {
+      const message = err?.data?.message || err?.message || 'Failed to update status';
+      toast.error(message);
+    }
+  };
+
+  const confirmPaidStatus = async () => {
+    if (!paidDate) {
+      toast.error('Please select the paid date');
+      return;
+    }
+    setIsUpdatingStatus(true);
+    try {
+      await updateProjectStatus({
+        id: projectId,
+        data: { status: 'paid', paidAt: toISODateTime(paidDate) },
+      }).unwrap();
+      toast.success('Status updated to paid');
+      setPaidModalOpen(false);
+      try {
+        await createInvoiceFromProject(projectId).unwrap();
+        toast.success('Invoice created with 15% VAT', { duration: 4000 });
+      } catch (invoiceErr: any) {
+        const msg = invoiceErr?.data?.message || invoiceErr?.message || 'Failed to create invoice';
+        toast.error(msg);
       }
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to update status';
       toast.error(message);
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -116,10 +153,19 @@ export default function ProjectDetailPage() {
       toast.error('Please enter a valid amount');
       return;
     }
+    if (!paymentDate) {
+      toast.error('Please select the payment date');
+      return;
+    }
     try {
       const result = await recordPayment({
         projectId,
-        data: { amount, method: paymentMethod, note: paymentNote || undefined },
+        data: {
+          amount,
+          method: paymentMethod,
+          note: paymentNote || undefined,
+          paidAt: toISODateTime(paymentDate),
+        },
       }).unwrap();
       toast.success(`Payment of ${formatCurrency(amount)} recorded`);
       if (result.data.summary.statusChanged) {
@@ -136,6 +182,7 @@ export default function ProjectDetailPage() {
       setPaymentAmount('');
       setPaymentMethod('cash');
       setPaymentNote('');
+      setPaymentDate(toLocalISODate());
     } catch (err: any) {
       const message = err?.data?.message || err?.message || 'Failed to record payment';
       toast.error(message);
@@ -337,7 +384,7 @@ export default function ProjectDetailPage() {
             )}
           </div>
           {nextStatuses.includes('paid') && (
-            <p className="text-[11px] text-muted mt-2">Marking as paid will auto-create an invoice with 15% VAT</p>
+            <p className="text-[11px] text-muted mt-2">You will be asked for the paid date. Marking as paid will auto-create an invoice with 15% VAT</p>
           )}
         </div>
       </Card>
@@ -398,6 +445,15 @@ export default function ProjectDetailPage() {
                   <div>
                     <p className="text-xs text-muted mb-1">Delivered At</p>
                     <p className="text-sm text-foreground">{formatDate(project.deliveredAt)}</p>
+                  </div>
+                )}
+                {project.paidAt && (
+                  <div>
+                    <p className="text-xs text-muted mb-1">Paid Date</p>
+                    <div className="flex items-center gap-1 text-sm text-green-600">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {formatDate(project.paidAt)}
+                    </div>
                   </div>
                 )}
               </div>
@@ -710,6 +766,17 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Payment Date *</label>
+            <input
+              type="date"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={paymentDate}
+              onChange={(e) => setPaymentDate(e.target.value)}
+              max={toLocalISODate()}
+            />
+          </div>
+
+          <div className="space-y-1.5">
             <label className="block text-sm font-medium text-foreground">Note (optional)</label>
             <input
               type="text"
@@ -723,6 +790,47 @@ export default function ProjectDetailPage() {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="secondary" onClick={() => setPaymentModalOpen(false)}>Cancel</Button>
             <Button onClick={handleRecordPayment} loading={isRecordingPayment}>Record Payment</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Mark Paid Modal */}
+      <Modal
+        open={paidModalOpen}
+        onClose={() => setPaidModalOpen(false)}
+        title="Mark as Paid"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-surface-hover p-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Total Price</span>
+              <span className="font-medium text-foreground">{formatCurrency(project.totalPrice || 0)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Already Paid</span>
+              <span className="font-medium text-green-600">
+                {formatCurrency(paymentSummary?.totalPaid ?? project.paidNowPrice ?? 0)}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-foreground">Paid Date *</label>
+            <input
+              type="date"
+              className="flex w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+              value={paidDate}
+              onChange={(e) => setPaidDate(e.target.value)}
+              max={toLocalISODate()}
+              required
+            />
+            <p className="text-[11px] text-muted">When was this project paid? This date is used for reporting.</p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="secondary" onClick={() => setPaidModalOpen(false)}>Cancel</Button>
+            <Button onClick={confirmPaidStatus} loading={isUpdatingStatus}>Confirm Payment</Button>
           </div>
         </div>
       </Modal>

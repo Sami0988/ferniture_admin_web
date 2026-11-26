@@ -3,7 +3,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { formatCurrency } from '@/lib/utils';
-import type { ProformaItem, ProformaUnit, ProformaItemType } from '@/types/api';
+import type { ProformaItem, ProformaUnit } from '@/types/api';
 import { PROFORMA_ITEM_TYPES } from '@/types/api';
 
 const unitOptions: { value: ProformaUnit; label: string }[] = [
@@ -14,6 +14,8 @@ const unitOptions: { value: ProformaUnit; label: string }[] = [
   { value: 'LOT', label: 'LOT' },
   { value: 'KG', label: 'KG' },
 ];
+
+const CUSTOM_ITEM_VALUE = '__custom__';
 
 const emptyItem = (): Omit<ProformaItem, 'id'> => ({
   description: 'aluminum_partition',
@@ -74,17 +76,40 @@ export default function LineItemsEditor({ items, onChange, error }: LineItemsEdi
             {items.map((item, index) => (
               <tr key={item.id} className="group">
                 <td className="py-2 pr-2">
-                  <select
-                    value={item.description}
-                    onChange={(e) => handleChange(index, 'description', e.target.value)}
-                    className="flex w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
-                  >
-                    {PROFORMA_ITEM_TYPES.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="space-y-1">
+                    <select
+                      value={
+                        PROFORMA_ITEM_TYPES.some((opt) => opt.value === item.description)
+                          ? item.description
+                          : CUSTOM_ITEM_VALUE
+                      }
+                      onChange={(e) =>
+                        handleChange(
+                          index,
+                          'description',
+                          e.target.value === CUSTOM_ITEM_VALUE ? '' : e.target.value,
+                        )
+                      }
+                      className="flex w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                    >
+                      {PROFORMA_ITEM_TYPES.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                      <option value={CUSTOM_ITEM_VALUE}>Other (type your own)</option>
+                    </select>
+                    {!PROFORMA_ITEM_TYPES.some((opt) => opt.value === item.description) && (
+                      <input
+                        type="text"
+                        value={item.description}
+                        onChange={(e) => handleChange(index, 'description', e.target.value)}
+                        placeholder="Enter item name…"
+                        maxLength={200}
+                        className="flex w-full rounded-lg border border-brand-gold/40 bg-surface px-3 py-1.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold"
+                      />
+                    )}
+                  </div>
                 </td>
                 <td className="py-2 pr-2">
                   <input

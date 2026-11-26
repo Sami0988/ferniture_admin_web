@@ -278,6 +278,7 @@ export interface ApiProject {
   deliveryDate?: string;
   completedAt?: string;
   deliveredAt?: string;
+  paidAt?: string;
   leadEmployeeId?: string;
   leadEmployeeName?: string;
   assignees?: ProjectAssignee[];
@@ -332,6 +333,7 @@ export interface RecordProjectPaymentRequest {
   amount: number;
   method: ProjectPaymentMethod;
   note?: string;
+  paidAt?: string;
 }
 
 export interface RecordPaymentResponse {
@@ -383,6 +385,7 @@ export interface UpdateProjectRequest {
 export interface UpdateProjectStatusRequest {
   status: ProjectStatus;
   notes?: string;
+  paidAt?: string;
 }
 
 export interface ProjectFilters {
@@ -1329,7 +1332,7 @@ export const PROFORMA_ITEM_TYPES: { value: ProformaItemType; label: string }[] =
 
 export interface ProformaItem {
   id: string;
-  description: ProformaItemType;
+  description: string;
   quantity: number;
   unit: ProformaUnit;
   unitPrice: number;

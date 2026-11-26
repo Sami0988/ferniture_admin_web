@@ -70,6 +70,8 @@ export default function ProformaForm({ id }: ProformaFormProps) {
     }
     if (items.length === 0) {
       newErrors.items = 'Add at least one line item';
+    } else if (items.some((item) => !String(item.description || '').trim())) {
+      newErrors.items = 'Enter a name for every line item';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
