@@ -1231,6 +1231,19 @@ export interface TaxReportQuery {
   fiscalYear?: number;
   fiscalMonth?: number;
   quarter?: number;
+  purchasePage?: number;
+  purchaseLimit?: number;
+  projectPage?: number;
+  projectLimit?: number;
+}
+
+export interface TaxReportPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 export interface TaxReportResponse {
@@ -1247,6 +1260,7 @@ export interface TaxReportResponse {
   breakdown: {
     purchases: Array<{ id: string; supplierName: string | null; fsNumber: string; purchaseDate: string; purchaseDateGC?: string; amountBeforeVat: string; vatAmount: string; withholdingAmount: string; totalAmount: string }>;
     workProjects: Array<{ id: string; projectName: string; clientName: string | null; paidAt: string; paidAtGC?: string; priceBeforeVat: string; vatAmount: string; totalPrice: string }>;
+    pagination?: { purchases: TaxReportPagination; workProjects: TaxReportPagination };
   };
 }
 

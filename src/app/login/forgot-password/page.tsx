@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/apiUrl';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
@@ -19,7 +20,7 @@ export default function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [countdown, setCountdown] = useState(0);
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+  const BASE_URL = API_BASE_URL;
 
   const isEmail = identifier.includes('@');
 

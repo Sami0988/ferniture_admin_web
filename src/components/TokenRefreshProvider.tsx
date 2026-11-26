@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/apiUrl';
 import { useEffect, useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setCredentials } from '@/store/authSlice';
@@ -26,7 +27,7 @@ export default function TokenRefreshProvider({ children }: { children: React.Rea
 
     let cancelled = false;
 
-    const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+    const BASE_URL = API_BASE_URL;
 
     const restoreSession = async () => {
       const storedAccessToken = getStoredAccessToken();

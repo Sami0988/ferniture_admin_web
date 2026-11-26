@@ -1,4 +1,5 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+import { API_BASE_URL } from '@/lib/apiUrl';
+const BASE_URL = API_BASE_URL;
 
 let refreshPromise: Promise<{ accessToken: string; refreshToken: string } | null> | null = null;
 let refreshCancelled = false;

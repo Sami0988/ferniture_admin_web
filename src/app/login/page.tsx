@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/apiUrl';
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useStore';
@@ -30,7 +31,7 @@ function LoginForm() {
   const [loginMutation, { isLoading }] = useLoginMutation();
   const [verifyMfa, { isLoading: isVerifyingMfa }] = useVerifyMfaMutation();
 
-  const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+  const BASE_URL = API_BASE_URL;
 
   // MFA countdown timer
   useEffect(() => {

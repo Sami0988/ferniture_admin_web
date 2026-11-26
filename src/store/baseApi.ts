@@ -1,9 +1,11 @@
+import { API_BASE_URL } from '@/lib/apiUrl';
 import { createApi, fetchBaseQuery, retry } from '@reduxjs/toolkit/query/react';
+import type { FetchBaseQueryError } from '@reduxjs/toolkit/query/react';
 import type { RootState } from './index';
 import { logout, getStoredRefreshToken } from './authSlice';
 import { refreshAuth } from './refreshAuth';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://kassahun-backend.onrender.com/api/v1';
+const BASE_URL = API_BASE_URL;
 
 function getCalendarValue(): string {
   if (typeof window === 'undefined') return '';
@@ -90,7 +92,8 @@ const baseQueryWithReauth = async (
 
     if (tokens) {
       api.dispatch({ type: 'auth/setTokens', payload: tokens });
-      return baseQuery(args, api, extraOptions);
+      // Re-send the same request, including the injected calendar param
+      return baseQuery(modifiedArgs, api, extraOptions);
     } else {
       api.dispatch(logout());
       redirectToLogin();
@@ -100,7 +103,18 @@ const baseQueryWithReauth = async (
   return result;
 };
 
-const baseQueryWithRetry = retry(baseQueryWithReauth, { maxRetries: 1 });
+// Retry once, but only reads that failed on the network or with a server error.
+// Mutations are never re-sent: if the first attempt was saved but its response
+// was lost, a retry would create a duplicate record. 4xx errors are not retried
+// because the same request would fail the same way.
+const baseQueryWithRetry = retry(baseQueryWithReauth, {
+  retryCondition: (error, _args, { attempt, baseQueryApi }) => {
+    if (attempt > 1) return false;
+    if (baseQueryApi.type !== 'query') return false;
+    const status = (error as FetchBaseQueryError | undefined)?.status;
+    return typeof status !== 'number' || status >= 500;
+  },
+});
 
 export const baseApi = createApi({
   reducerPath: 'api',

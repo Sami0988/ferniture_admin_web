@@ -91,8 +91,9 @@ export default function TaxReportPage() {
   const [fiscalMonth, setFiscalMonth] = useState<number>(getCurrentFiscalMonth());
   const [fiscalQuarter, setFiscalQuarter] = useState<number>(getCurrentFiscalQuarter());
   const [fiscalYear, setFiscalYear] = useState<number>(getCurrentFiscalYear());
-  const [purchasePage, setPurchasePage] = useState(1);
-  const [projectPage, setProjectPage] = useState(1);
+  // Pages are tied to the filters they were chosen for, so changing the
+  // period/date falls back to page 1 without an extra request.
+  const [pages, setPages] = useState({ key: '', purchase: 1, project: 1 });
 
   const isFiscal = calendar === 'ec-fiscal';
 
@@ -145,21 +146,55 @@ export default function TaxReportPage() {
     return params;
   }, [activePeriod, referenceDate, customFrom, customTo, fiscalMonth, fiscalQuarter, fiscalYear, isFiscal]);
 
-  const { data: report, isLoading, isFetching, error } = useGetTaxReportQuery(queryParams);
+  const filterKey = JSON.stringify(queryParams);
+  const purchasePage = pages.key === filterKey ? pages.purchase : 1;
+  const projectPage = pages.key === filterKey ? pages.project : 1;
 
+  // A custom range needs both dates, in order, before it can be requested.
+  const customRangeHint =
+    activePeriod !== 'custom'
+      ? null
+      : !customFrom || !customTo
+        ? 'Select both a From and a To date to view the report.'
+        : customFrom > customTo
+          ? 'The From date must be on or before the To date.'
+          : null;
+
+  const {
+    data: fetchedReport,
+    isLoading,
+    isFetching,
+    error,
+  } = useGetTaxReportQuery(
+    {
+      ...queryParams,
+      purchasePage,
+      purchaseLimit: PAGE_SIZE,
+      projectPage,
+      projectLimit: PAGE_SIZE,
+    },
+    { skip: !!customRangeHint },
+  );
+  const report = customRangeHint ? undefined : fetchedReport;
+
+  // The server returns one page of each list plus its pagination info.
   const purchases = report?.breakdown?.purchases ?? [];
   const workProjects = report?.breakdown?.workProjects ?? [];
-  const purchaseTotalPages = Math.max(1, Math.ceil(purchases.length / PAGE_SIZE));
-  const projectTotalPages = Math.max(1, Math.ceil(workProjects.length / PAGE_SIZE));
-  const safePurchasePage = Math.min(purchasePage, purchaseTotalPages);
-  const safeProjectPage = Math.min(projectPage, projectTotalPages);
-  const visiblePurchases = purchases.slice((safePurchasePage - 1) * PAGE_SIZE, safePurchasePage * PAGE_SIZE);
-  const visibleWorkProjects = workProjects.slice((safeProjectPage - 1) * PAGE_SIZE, safeProjectPage * PAGE_SIZE);
+  const purchasePagination = report?.breakdown?.pagination?.purchases;
+  const projectPagination = report?.breakdown?.pagination?.workProjects;
+  const purchaseTotal = purchasePagination?.total ?? report?.purchases?.count ?? purchases.length;
+  const projectTotal = projectPagination?.total ?? report?.workProjects?.count ?? workProjects.length;
+  const purchaseTotalPages = purchasePagination?.totalPages ?? 1;
+  const projectTotalPages = projectPagination?.totalPages ?? 1;
+  const safePurchasePage = purchasePagination?.page ?? purchasePage;
+  const safeProjectPage = projectPagination?.page ?? projectPage;
+  const purchasePageSize = purchasePagination?.limit ?? PAGE_SIZE;
+  const projectPageSize = projectPagination?.limit ?? PAGE_SIZE;
 
-  useEffect(() => {
-    setPurchasePage(1);
-    setProjectPage(1);
-  }, [report?.period?.from, report?.period?.to, report?.period?.label]);
+  const goToPurchasePage = (page: number) =>
+    setPages({ key: filterKey, purchase: page, project: projectPage });
+  const goToProjectPage = (page: number) =>
+    setPages({ key: filterKey, purchase: purchasePage, project: page });
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
     const params: Record<string, string> = { period: activePeriod, format };
@@ -193,7 +228,10 @@ export default function TaxReportPage() {
       const ext = format === 'xlsx' ? 'xlsx' : 'pdf';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `tax-report.${ext}`;
+      const range = report?.period
+        ? `-${report.period.from}-to-${report.period.to}`.replace(/[^\w-]+/g, '-')
+        : '';
+      a.download = `tax-report${range}.${ext}`;
       a.click();
       URL.revokeObjectURL(a.href);
       toast.success(`${format.toUpperCase()} report downloaded`);
@@ -202,32 +240,29 @@ export default function TaxReportPage() {
     }
   };
 
-  const getNetVatCardStyle = (status: TaxReportResponse['vatSummary']['status']) => {
-    if (status === 'PAYABLE_TO_GOVERNMENT') {
-      return 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800';
-    }
-    return 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800';
-  };
+  type VatSummary = TaxReportResponse['vatSummary'] | undefined;
+  const isVatZero = (summary: VatSummary) => (summary?.netVat ?? 0) === 0;
+  const owesVat = (summary: VatSummary) =>
+    summary?.status === 'PAYABLE_TO_GOVERNMENT' && !isVatZero(summary);
 
-  const getNetVatTextStyle = (status: TaxReportResponse['vatSummary']['status']) => {
-    if (status === 'PAYABLE_TO_GOVERNMENT') {
-      return 'text-red-600 dark:text-red-400';
-    }
-    return 'text-green-600 dark:text-green-400';
-  };
+  const getNetVatCardStyle = (summary: VatSummary) =>
+    owesVat(summary)
+      ? 'bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800'
+      : 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800';
 
-  const getNetVatIcon = (status: TaxReportResponse['vatSummary']['status']) => {
-    if (status === 'PAYABLE_TO_GOVERNMENT') {
-      return <AlertCircle className="h-5 w-5 text-red-500" />;
-    }
-    return <CheckCircle className="h-5 w-5 text-green-500" />;
-  };
+  const getNetVatTextStyle = (summary: VatSummary) =>
+    owesVat(summary) ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
 
-  const getNetVatLabel = (status: TaxReportResponse['vatSummary']['status']) => {
-    if (status === 'PAYABLE_TO_GOVERNMENT') {
-      return 'You owe the government';
-    }
-    return 'Government owes you';
+  const getNetVatIcon = (summary: VatSummary) =>
+    owesVat(summary) ? (
+      <AlertCircle className="h-5 w-5 text-red-500" />
+    ) : (
+      <CheckCircle className="h-5 w-5 text-green-500" />
+    );
+
+  const getNetVatLabel = (summary: VatSummary) => {
+    if (isVatZero(summary)) return 'No VAT due';
+    return owesVat(summary) ? 'You owe the government' : 'Government owes you';
   };
 
   return (
@@ -240,11 +275,11 @@ export default function TaxReportPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')} disabled={isFetching}>
+          <Button variant="outline" size="sm" onClick={() => handleExport('xlsx')} disabled={isFetching || !!customRangeHint}>
             <Download className="h-4 w-4 mr-1.5" />
             Export Excel
           </Button>
-          <Button variant="outline" size="sm" onClick={() => handleExport('pdf')} disabled={isFetching}>
+          <Button variant="outline" size="sm" onClick={() => handleExport('pdf')} disabled={isFetching || !!customRangeHint}>
             <FileText className="h-4 w-4 mr-1.5" />
             Export PDF
           </Button>
@@ -282,7 +317,7 @@ export default function TaxReportPage() {
               disabled={isFetching}
               className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold disabled:opacity-50"
             >
-              {[0, 1, 2, 3, 4].map((offset) => {
+              {Array.from({ length: 10 }, (_, offset) => offset).map((offset) => {
                 const fy = getCurrentFiscalYear() - offset;
                 return (
                   <option key={fy} value={fy}>
@@ -401,7 +436,13 @@ export default function TaxReportPage() {
         </div>
       )}
 
-      {isLoading && (
+      {customRangeHint && (
+        <Card>
+          <div className="py-12 text-center text-sm text-muted">{customRangeHint}</div>
+        </Card>
+      )}
+
+      {!customRangeHint && isLoading && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -413,7 +454,7 @@ export default function TaxReportPage() {
         </div>
       )}
 
-      {!isLoading && error && (
+      {!customRangeHint && !isLoading && error && (
         <Card>
           <div className="py-12 text-center text-sm text-muted">
             Failed to load tax report. Please try again.
@@ -436,7 +477,7 @@ export default function TaxReportPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted">
                   <TrendingDown className="h-4 w-4" />
-                  Input VAT (Sales)
+                  Output VAT (Sales)
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(report.vatSummary?.outputVat ?? 0)}
@@ -451,7 +492,7 @@ export default function TaxReportPage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted">
                   <TrendingUp className="h-4 w-4" />
-                  Output VAT (Purchases)
+                  Input VAT (Purchases)
                 </div>
                 <p className="text-2xl font-bold text-foreground">
                   {formatCurrency(report.vatSummary?.inputVat ?? 0)}
@@ -462,16 +503,16 @@ export default function TaxReportPage() {
               </div>
             </Card>
 
-            <div className={cn('rounded-xl border p-5 space-y-2', getNetVatCardStyle(report.vatSummary?.status))}>
+            <div className={cn('rounded-xl border p-5 space-y-2', getNetVatCardStyle(report.vatSummary))}>
               <div className="flex items-center gap-2 text-sm text-muted">
-                {getNetVatIcon(report.vatSummary?.status)}
+                {getNetVatIcon(report.vatSummary)}
                 Net VAT
               </div>
-              <p className={cn('text-2xl font-bold', getNetVatTextStyle(report.vatSummary?.status))}>
+              <p className={cn('text-2xl font-bold', getNetVatTextStyle(report.vatSummary))}>
                 {formatCurrency(report.vatSummary?.netVat ?? 0)}
               </p>
-              <p className={cn('text-xs font-medium', getNetVatTextStyle(report.vatSummary?.status))}>
-                {getNetVatLabel(report.vatSummary?.status)}
+              <p className={cn('text-xs font-medium', getNetVatTextStyle(report.vatSummary))}>
+                {getNetVatLabel(report.vatSummary)}
               </p>
             </div>
 
@@ -504,7 +545,7 @@ export default function TaxReportPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Building2 className="h-4 w-4 text-muted" />
-                  Purchases in Period ({report.breakdown?.purchases?.length ?? 0})
+                  Purchases in Period ({purchaseTotal})
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -520,7 +561,7 @@ export default function TaxReportPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {visiblePurchases.map((item) => (
+                      {purchases.map((item) => (
                         <tr
                           key={item.id}
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
@@ -541,22 +582,22 @@ export default function TaxReportPage() {
                 {purchaseTotalPages > 1 && (
                   <div className="flex items-center justify-between pt-1">
                     <p className="text-sm text-muted">
-                      Showing {(safePurchasePage - 1) * PAGE_SIZE + 1}–{Math.min(safePurchasePage * PAGE_SIZE, purchases.length)} of {purchases.length}
+                      Showing {(safePurchasePage - 1) * purchasePageSize + 1}–{Math.min(safePurchasePage * purchasePageSize, purchaseTotal)} of {purchaseTotal}
                     </p>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPurchasePage((p) => Math.max(1, p - 1))}
-                        disabled={safePurchasePage === 1}
+                        onClick={() => goToPurchasePage(Math.max(1, safePurchasePage - 1))}
+                        disabled={isFetching || safePurchasePage === 1}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setPurchasePage((p) => Math.min(purchaseTotalPages, p + 1))}
-                        disabled={safePurchasePage >= purchaseTotalPages}
+                        onClick={() => goToPurchasePage(Math.min(purchaseTotalPages, safePurchasePage + 1))}
+                        disabled={isFetching || safePurchasePage >= purchaseTotalPages}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -572,7 +613,7 @@ export default function TaxReportPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                   <Building2 className="h-4 w-4 text-muted" />
-                  Work Projects in Period ({report.breakdown?.workProjects?.length ?? 0})
+                  Work Projects in Period ({projectTotal})
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -587,7 +628,7 @@ export default function TaxReportPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {visibleWorkProjects.map((item) => (
+                      {workProjects.map((item) => (
                         <tr
                           key={item.id}
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
@@ -607,22 +648,22 @@ export default function TaxReportPage() {
                 {projectTotalPages > 1 && (
                   <div className="flex items-center justify-between pt-1">
                     <p className="text-sm text-muted">
-                      Showing {(safeProjectPage - 1) * PAGE_SIZE + 1}–{Math.min(safeProjectPage * PAGE_SIZE, workProjects.length)} of {workProjects.length}
+                      Showing {(safeProjectPage - 1) * projectPageSize + 1}–{Math.min(safeProjectPage * projectPageSize, projectTotal)} of {projectTotal}
                     </p>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setProjectPage((p) => Math.max(1, p - 1))}
-                        disabled={safeProjectPage === 1}
+                        onClick={() => goToProjectPage(Math.max(1, safeProjectPage - 1))}
+                        disabled={isFetching || safeProjectPage === 1}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setProjectPage((p) => Math.min(projectTotalPages, p + 1))}
-                        disabled={safeProjectPage >= projectTotalPages}
+                        onClick={() => goToProjectPage(Math.min(projectTotalPages, safeProjectPage + 1))}
+                        disabled={isFetching || safeProjectPage >= projectTotalPages}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
