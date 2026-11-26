@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Skeleton from '@/components/ui/Skeleton';
 import { ReportPeriod, TaxReportResponse } from '@/types/api';
-import { Download, FileText, TrendingUp, TrendingDown, Receipt, Building2, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Download, FileText, TrendingUp, TrendingDown, Receipt, Building2, AlertCircle, CheckCircle, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import Kenat from 'kenat';
@@ -53,6 +53,8 @@ function getLocalDateString(): string {
   return `${y}-${m}-${d}`;
 }
 
+const PAGE_SIZE = 15;
+
 function getCurrentFiscalMonth(): number {
   const now = new Date();
   const ec = new Kenat(now).getEthiopian();
@@ -89,6 +91,8 @@ export default function TaxReportPage() {
   const [fiscalMonth, setFiscalMonth] = useState<number>(getCurrentFiscalMonth());
   const [fiscalQuarter, setFiscalQuarter] = useState<number>(getCurrentFiscalQuarter());
   const [fiscalYear, setFiscalYear] = useState<number>(getCurrentFiscalYear());
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [projectPage, setProjectPage] = useState(1);
 
   const isFiscal = calendar === 'ec-fiscal';
 
@@ -142,6 +146,20 @@ export default function TaxReportPage() {
   }, [activePeriod, referenceDate, customFrom, customTo, fiscalMonth, fiscalQuarter, fiscalYear, isFiscal]);
 
   const { data: report, isLoading, isFetching, error } = useGetTaxReportQuery(queryParams);
+
+  const purchases = report?.breakdown?.purchases ?? [];
+  const workProjects = report?.breakdown?.workProjects ?? [];
+  const purchaseTotalPages = Math.max(1, Math.ceil(purchases.length / PAGE_SIZE));
+  const projectTotalPages = Math.max(1, Math.ceil(workProjects.length / PAGE_SIZE));
+  const safePurchasePage = Math.min(purchasePage, purchaseTotalPages);
+  const safeProjectPage = Math.min(projectPage, projectTotalPages);
+  const visiblePurchases = purchases.slice((safePurchasePage - 1) * PAGE_SIZE, safePurchasePage * PAGE_SIZE);
+  const visibleWorkProjects = workProjects.slice((safeProjectPage - 1) * PAGE_SIZE, safeProjectPage * PAGE_SIZE);
+
+  useEffect(() => {
+    setPurchasePage(1);
+    setProjectPage(1);
+  }, [report?.period?.from, report?.period?.to, report?.period?.label]);
 
   const handleExport = async (format: 'xlsx' | 'pdf') => {
     const params: Record<string, string> = { period: activePeriod, format };
@@ -502,7 +520,7 @@ export default function TaxReportPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {(report.breakdown?.purchases ?? []).map((item) => (
+                      {visiblePurchases.map((item) => (
                         <tr
                           key={item.id}
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
@@ -520,6 +538,31 @@ export default function TaxReportPage() {
                     </tbody>
                   </table>
                 </div>
+                {purchaseTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-sm text-muted">
+                      Showing {(safePurchasePage - 1) * PAGE_SIZE + 1}–{Math.min(safePurchasePage * PAGE_SIZE, purchases.length)} of {purchases.length}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPurchasePage((p) => Math.max(1, p - 1))}
+                        disabled={safePurchasePage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPurchasePage((p) => Math.min(purchaseTotalPages, p + 1))}
+                        disabled={safePurchasePage >= purchaseTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
@@ -544,7 +587,7 @@ export default function TaxReportPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border/50">
-                      {(report.breakdown?.workProjects ?? []).map((item) => (
+                      {visibleWorkProjects.map((item) => (
                         <tr
                           key={item.id}
                           className="hover:bg-surface-hover/50 transition-colors cursor-pointer"
@@ -561,6 +604,31 @@ export default function TaxReportPage() {
                     </tbody>
                   </table>
                 </div>
+                {projectTotalPages > 1 && (
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-sm text-muted">
+                      Showing {(safeProjectPage - 1) * PAGE_SIZE + 1}–{Math.min(safeProjectPage * PAGE_SIZE, workProjects.length)} of {workProjects.length}
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setProjectPage((p) => Math.max(1, p - 1))}
+                        disabled={safeProjectPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setProjectPage((p) => Math.min(projectTotalPages, p + 1))}
+                        disabled={safeProjectPage >= projectTotalPages}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           )}
